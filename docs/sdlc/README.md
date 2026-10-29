@@ -5,7 +5,7 @@
 <!-- sdlc:auto:start overview -->
 Build a Performance management System
 
-**Documentation version:** v5
+**Documentation version:** v6
 <!-- sdlc:auto:end overview -->
 
 ## Contents
@@ -16,7 +16,7 @@ Build a Performance management System
 | [Requirements](requirements/README.md) | v1 approved |
 | [Architecture](architecture/README.md) | 47 entries |
 | [Development](development/README.md) | 24 entries |
-| [Testing](testing/README.md) | 1 entry |
+| [Testing](testing/README.md) | 2 entries |
 | [Deployment](deployment/README.md) | 3 entries |
 | [Maintenance](maintenance/README.md) | 1 entry |
 | [Data model](architecture/data-model.md) | generated |
@@ -31,7 +31,7 @@ Build a Performance management System
 | [Runbook](deployment/runbook.md) | deployed |
 | [Release notes](deployment/release-notes.md) | 2 releases |
 | [Traceability matrix](traceability-matrix.md) | 35 requirements |
-| [Changelog](CHANGELOG.md) | 5 versions |
+| [Changelog](CHANGELOG.md) | 6 versions |
 <!-- sdlc:auto:end contents -->
 
 ## Open gaps
@@ -205,7 +205,17 @@ Build a Performance management System
 
 ### Testing
 
-- Testing phase has not started: no test plans, test cases or results recorded.
+- The input does not say what the 4 checks are (names, type, scope).
+- No run date/time, executor, commit/build reference, or environment is recorded.
+- The run is not linked to a ticket or to any requirement, so it cannot be traced to US-001 to US-035.
+- It is unclear whether these checks are functional tests of PMS features or only build/lint/static checks.
+- No approval or sign-off of this result is recorded, so status is left as draft.
+- No test plan or test strategy provided for the testing phase.
+- No test cases or acceptance tests mapped to any of US-001 to US-035.
+- No defect/bug records provided, so open issues cannot be determined.
+- No non-functional testing (performance, security, accessibility) recorded.
+- No UAT or stakeholder sign-off recorded for the testing phase.
+- There is no basis to say whether the 4 passing checks cover any user story. Requirement coverage should be treated as unknown, not as passed.
 
 ### Deployment
 
