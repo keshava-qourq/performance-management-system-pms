@@ -1,9 +1,9 @@
 """SQLAlchemy models for accounts, sessions, settings and audit."""
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String
+from sqlalchemy import JSON, Boolean, Date, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -37,10 +37,12 @@ class Employee(Base):
     work_email: Mapped[str] = mapped_column(String(320), unique=True)  # stored lower-case
     job_title_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("job_title.id"))
     department_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("department.id"))
-    manager_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("employee.id"))
+    manager_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("employee.id"), index=True)
     role: Mapped[str] = mapped_column(String(20))  # employee|manager|hr_admin|executive
     status: Mapped[str] = mapped_column(String(20), default="active")  # active|deactivated
     deactivated: Mapped[bool] = mapped_column(Boolean, default=False)
+    leaving_date: Mapped[date | None] = mapped_column(Date)
+    deactivated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     password_hash: Mapped[str | None] = mapped_column(String)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 

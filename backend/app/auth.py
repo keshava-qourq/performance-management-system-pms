@@ -87,10 +87,13 @@ def revoke_session(db: Session, token: str) -> None:
     db.commit()
 
 
-def deactivate_employee(db: Session, employee: Employee) -> None:
+def deactivate_employee(db: Session, employee: Employee, leaving_date=None) -> None:
     """Deactivate an account and end all its sessions immediately (NFR-003)."""
     employee.deactivated = True
     employee.status = "deactivated"
+    employee.deactivated_at = datetime.now(UTC)
+    if leaving_date is not None:
+        employee.leaving_date = leaving_date
     db.execute(
         update(UserSession)
         .where(UserSession.employee_id == employee.id, UserSession.revoked_at.is_(None))
