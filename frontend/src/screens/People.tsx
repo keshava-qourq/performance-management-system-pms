@@ -8,6 +8,7 @@ import { brand } from "@/lib/brand";
 import { useNavigate } from "@/lib/navigate";
 import { useSession } from "@/lib/session";
 import DirectoryTab from "@/screens/PeopleDirectory";
+import { formatDateTime } from "@/lib/dateFormat";
 
 const {
   Button,
@@ -737,7 +738,7 @@ export default function Screen() {
         " (" +
         viewAs +
         ") opened this record on " +
-        new Date().toLocaleString("en-GB") +
+        formatDateTime(new Date()) +
         ".",
     );
   };

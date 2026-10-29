@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { NavLink, Navigate, Outlet, Route, Routes } from "react-router-dom";
 
 import { useLogout, useSession, useSessionExpiry } from "@/lib/session";
@@ -20,7 +21,12 @@ function Shell() {
   const { user, isLoading } = useSession();
   const logout = useLogout();
   useSessionExpiry();
-  if (isLoading) return <p role="status" className="p-6">{"Loading…"}</p>;
+  if (isLoading)
+    return (
+      <p role="status" className="p-6">
+        {"Loading…"}
+      </p>
+    );
   if (!user) return <Navigate to="/sign-in" replace />;
   return (
     <div className="flex min-h-screen">
@@ -71,6 +77,11 @@ function Shell() {
 }
 
 export default function App() {
+  // English-only interface (NFR-018): set regardless of the browser's
+  // preferred language -- no language-selection control exists anywhere.
+  useEffect(() => {
+    document.documentElement.lang = "en";
+  }, []);
   return (
     <Routes>
       <Route path="/sign-in" element={<SignIn />} />
