@@ -16,8 +16,11 @@
     "test:e2e:install": "playwright install chromium"
   },
   "dependencies": {
+    "@dnd-kit/sortable": "*",
+    "@tanstack/react-query": ">=5.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hook-form": ">=7.0",
     "react-router-dom": "^7.0.0"
   },
   "devDependencies": {

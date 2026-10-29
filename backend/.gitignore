@@ -6,3 +6,6 @@ venv/
 .mypy_cache/
 *.db
 .env
+# The default MEDIA_ROOT (see app/config.py): local-disk uploads when
+# S3_BUCKET is unset. Never the right thing to commit.
+media/
