@@ -17,7 +17,20 @@ import {
 } from "@/lib/employees";
 import { Icons } from "@/lib/icons";
 import { useSession } from "@/lib/session";
-import { Avatar, Button, Empty, Input, Label, Select, Table, TBody, TD, TH, THead, TR } from "@/lib/ui";
+import {
+  Avatar,
+  Button,
+  Empty,
+  Input,
+  Label,
+  Select,
+  Table,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+} from "@/lib/ui";
 
 const LINE = "rgba(255,255,255,0.1)";
 const box = { backgroundColor: "#1d2b25", border: "1px solid " + LINE, borderRadius: 6 };
@@ -47,7 +60,7 @@ const FIELDS: Array<keyof FormValues> = [
   "role",
 ];
 
-export const isHrAdmin = (role: string | null) =>
+const isHrAdmin = (role: string | null) =>
   (role ?? "").toLowerCase().replace(/[\s-]+/g, "_") === "hr_admin";
 
 function FieldError({ id, text }: { id: string; text?: string }) {
@@ -103,7 +116,11 @@ function EmployeePanel({
         await update.mutateAsync({ id: employee.id, input });
         onSaved(`${values.full_name} was updated.`);
       } else {
-        const input: EmployeeInput = { full_name: values.full_name, work_email: values.work_email, role: values.role };
+        const input: EmployeeInput = {
+          full_name: values.full_name,
+          work_email: values.work_email,
+          role: values.role,
+        };
         if (values.job_title_id) input.job_title_id = values.job_title_id;
         if (values.department_id) input.department_id = values.department_id;
         await create.mutateAsync(input);
@@ -123,7 +140,11 @@ function EmployeePanel({
       } else if (error instanceof ApiError && error.status === 403) {
         setFormError("You do not have permission to change employee records.");
       } else {
-        setFormError(error instanceof ApiError && error.message ? error.message : "The employee could not be saved. Try again.");
+        setFormError(
+          error instanceof ApiError && error.message
+            ? error.message
+            : "The employee could not be saved. Try again.",
+        );
       }
     }
   });
@@ -136,10 +157,16 @@ function EmployeePanel({
     <aside aria-label="Employee record form" className="p-5 space-y-4" style={box}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-[11px] uppercase tracking-[0.16em]" style={{ color: brand.accentColor }}>
+          <div
+            className="text-[11px] uppercase tracking-[0.16em]"
+            style={{ color: brand.accentColor }}
+          >
             {employee ? "Employee record" : "New employee"}
           </div>
-          <h2 className="text-xl" style={{ fontFamily: brand.fontHeading, color: brand.primaryColor }}>
+          <h2
+            className="text-xl"
+            style={{ fontFamily: brand.fontHeading, color: brand.primaryColor }}
+          >
             {employee ? employee.full_name : "Add an employee"}
           </h2>
           {employee && (
@@ -154,7 +181,9 @@ function EmployeePanel({
       </div>
       <form onSubmit={submit} noValidate className="space-y-4">
         <div>
-          <Label htmlFor="full_name" className={eyebrow} style={muted}>Full name</Label>
+          <Label htmlFor="full_name" className={eyebrow} style={muted}>
+            Full name
+          </Label>
           <Input
             id="full_name"
             {...register("full_name")}
@@ -165,7 +194,9 @@ function EmployeePanel({
           <FieldError id="full_name-error" text={errors.full_name?.message} />
         </div>
         <div>
-          <Label htmlFor="work_email" className={eyebrow} style={muted}>Work email</Label>
+          <Label htmlFor="work_email" className={eyebrow} style={muted}>
+            Work email
+          </Label>
           <Input
             id="work_email"
             type="email"
@@ -177,24 +208,34 @@ function EmployeePanel({
           <FieldError id="work_email-error" text={errors.work_email?.message} />
         </div>
         <div>
-          <Label htmlFor="job_title_id" className={eyebrow} style={muted}>Job title</Label>
+          <Label htmlFor="job_title_id" className={eyebrow} style={muted}>
+            Job title
+          </Label>
           <Select
             id="job_title_id"
             {...register("job_title_id")}
             style={field}
-            options={[...placeholder("a job title"), ...titles.map((t) => ({ value: t.id, label: t.name }))]}
+            options={[
+              ...placeholder("a job title"),
+              ...titles.map((t) => ({ value: t.id, label: t.name })),
+            ]}
             aria-invalid={invalid("job_title_id")}
             aria-describedby={describedBy("job_title_id")}
           />
           <FieldError id="job_title_id-error" text={errors.job_title_id?.message} />
         </div>
         <div>
-          <Label htmlFor="department_id" className={eyebrow} style={muted}>Department</Label>
+          <Label htmlFor="department_id" className={eyebrow} style={muted}>
+            Department
+          </Label>
           <Select
             id="department_id"
             {...register("department_id")}
             style={field}
-            options={[...placeholder("a department"), ...departments.map((d) => ({ value: d.id, label: d.name }))]}
+            options={[
+              ...placeholder("a department"),
+              ...departments.map((d) => ({ value: d.id, label: d.name })),
+            ]}
             aria-invalid={invalid("department_id")}
             aria-describedby={describedBy("department_id")}
           />
@@ -202,8 +243,16 @@ function EmployeePanel({
         </div>
         {!employee && (
           <div>
-            <Label htmlFor="role" className={eyebrow} style={muted}>Role</Label>
-            <Select id="role" {...register("role")} style={field} options={ROLES} aria-invalid={invalid("role")} />
+            <Label htmlFor="role" className={eyebrow} style={muted}>
+              Role
+            </Label>
+            <Select
+              id="role"
+              {...register("role")}
+              style={field}
+              options={ROLES}
+              aria-invalid={invalid("role")}
+            />
             <FieldError id="role-error" text={errors.role?.message} />
           </div>
         )}
@@ -212,7 +261,12 @@ function EmployeePanel({
             {formError}
           </p>
         )}
-        <Button type="submit" disabled={isSubmitting} className="w-full" style={{ backgroundColor: brand.accentColor, color: "#16211c" }}>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full"
+          style={{ backgroundColor: brand.accentColor, color: "#16211c" }}
+        >
           {employee ? "Save changes" : "Create employee"}
         </Button>
       </form>
@@ -240,7 +294,12 @@ export default function DirectoryTab() {
         description="Your role is not permitted to view employee records, so no data is shown."
       />
     );
-  if (failure) return <p role="alert" style={muted}>The directory could not be loaded. Try again shortly.</p>;
+  if (failure)
+    return (
+      <p role="alert" style={muted}>
+        The directory could not be loaded. Try again shortly.
+      </p>
+    );
   if (employees.isLoading || !employees.data) return <p style={muted}>Loading the directory…</p>;
 
   const rows = employees.data;
@@ -252,7 +311,7 @@ export default function DirectoryTab() {
         v.toLowerCase().includes(needle),
       ),
   );
-  const editing = panel?.id ? rows.find((e) => e.id === panel.id) ?? null : null;
+  const editing = panel?.id ? (rows.find((e) => e.id === panel.id) ?? null) : null;
 
   return (
     <div className="space-y-4">
@@ -304,9 +363,13 @@ export default function DirectoryTab() {
               <Table>
                 <THead>
                   <TR>
-                    {["Employee", "Job title", "Department", "Manager", "Status", ""].map((h, i) => (
-                      <TH key={i} style={muted}>{h}</TH>
-                    ))}
+                    {["Employee", "Job title", "Department", "Manager", "Status", ""].map(
+                      (h, i) => (
+                        <TH key={i} style={muted}>
+                          {h}
+                        </TH>
+                      ),
+                    )}
                   </TR>
                 </THead>
                 <TBody>
@@ -317,7 +380,11 @@ export default function DirectoryTab() {
                           <Avatar name={e.full_name} />
                           <div>
                             <div style={{ color: brand.primaryColor }}>{e.full_name}</div>
-                            {e.work_email && <div className="text-xs" style={muted}>{e.work_email}</div>}
+                            {e.work_email && (
+                              <div className="text-xs" style={muted}>
+                                {e.work_email}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </TD>

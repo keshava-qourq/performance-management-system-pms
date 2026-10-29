@@ -4,10 +4,6 @@
 // Set at build time; the fallback is the local backend.
 export const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
-// Kept for compatibility with existing imports. User calls no longer send it: the session
-// cookie authenticates them.
-export const API_SECRET_KEY: string = import.meta.env.VITE_API_SECRET_KEY ?? "";
-
 // Custom header sent on every mutation, next to the session cookie.
 export const MUTATION_HEADER = "X-Requested-With";
 export const MUTATION_HEADER_VALUE = "pms";
@@ -46,7 +42,9 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(method === "GET" || method === "HEAD" ? {} : { [MUTATION_HEADER]: MUTATION_HEADER_VALUE }),
+      ...(method === "GET" || method === "HEAD"
+        ? {}
+        : { [MUTATION_HEADER]: MUTATION_HEADER_VALUE }),
       ...(init?.headers ?? {}),
     },
   });

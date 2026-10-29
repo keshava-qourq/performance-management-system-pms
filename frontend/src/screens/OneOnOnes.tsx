@@ -1,19 +1,12 @@
 // @ts-nocheck -- generated from the approved design under its JS runtime contract; not hand-written TypeScript.
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React from "react";
 
-import * as UI from "@/lib/ui";
 import { Icons } from "@/lib/icons";
 import { brand } from "@/lib/brand";
 import { formatDate } from "@/lib/dateFormat";
 
-const { Select } = UI;
-
-const { Search, Check, Edit, Filter } = Icons;
-
 const TODAY = "2026-10-29";
 const ME_ID = "e1";
-const HR_CAN_READ_PRIVATE_NOTES = false;
 
 const PEOPLE = {
   e1: { id: "e1", name: "Amara Okafor", title: "Engineering Manager" },
@@ -226,11 +219,9 @@ const SEED = [
   },
 ];
 
-const fmt = (iso) =>
-  formatDate(iso, { day: "numeric", month: "short", year: "numeric" });
+const fmt = (iso) => formatDate(iso);
 const fmtShort = (iso) => formatDate(iso, { day: "numeric", month: "short" });
-const fmtDay = (iso) =>
-  formatDate(iso, { weekday: "short", day: "numeric", month: "short" });
+const fmtDay = (iso) => formatDate(iso, { weekday: "short", day: "numeric", month: "short" });
 const first = (id) => PEOPLE[id].name.split(" ")[0];
 const initials = (id) =>
   PEOPLE[id].name
@@ -1496,10 +1487,8 @@ export default function Screen() {
                     </span>
                   </div>
                   <p style={{ margin: "8px 0 16px", color: muted, fontSize: 14, lineHeight: 1.6 }}>
-                    {first(other)} cannot see these notes anywhere in the product.{" "}
-                    {HR_CAN_READ_PRIVATE_NOTES
-                      ? "Under the current HR setting, HR Admins can read private notes."
-                      : "Under the current HR setting, HR Admins cannot read private notes either."}
+                    {first(other)} cannot see these notes anywhere in the product. Under the current
+                    HR setting, HR Admins cannot read private notes either.
                   </p>
                   <label htmlFor="oo-note" style={label}>
                     Your observations

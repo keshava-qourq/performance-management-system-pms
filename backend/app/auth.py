@@ -70,6 +70,14 @@ def create_session(db: Session, employee: Employee) -> str:
     return token
 
 
+def set_session_cookie(response: Response, token: str) -> None:
+    response.set_cookie(COOKIE_NAME, token, httponly=True, secure=True, samesite="strict")
+
+
+def clear_session_cookie(response: Response) -> None:
+    response.delete_cookie(COOKIE_NAME, httponly=True, secure=True, samesite="strict")
+
+
 def revoke_session(db: Session, token: str) -> None:
     db.execute(
         update(UserSession)

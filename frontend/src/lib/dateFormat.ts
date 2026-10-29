@@ -17,9 +17,6 @@ export function formatDate(
   return date.toLocaleDateString(ENGLISH_LOCALE, options);
 }
 
-export function formatDateTime(
-  date: Date = new Date(),
-  options?: Intl.DateTimeFormatOptions,
-): string {
-  return date.toLocaleString(ENGLISH_LOCALE, options);
+export function formatDateTime(date: Date): string {
+  return date.toLocaleString(ENGLISH_LOCALE);
 }

@@ -65,7 +65,7 @@ def login(body: LoginIn, response: Response, db: Session = Depends(get_db)):
     db.execute(delete(FailedLoginAttempt).where(FailedLoginAttempt.employee_id == emp.id))
     db.commit()
     token = auth.create_session(db, emp)
-    response.set_cookie(auth.COOKIE_NAME, token, httponly=True, secure=True, samesite="strict")
+    auth.set_session_cookie(response, token)
     return {"employee": _public(emp), "role": emp.role}
 
 
@@ -78,7 +78,7 @@ def logout(
 ):
     if token:
         auth.revoke_session(db, token)
-    response.delete_cookie(auth.COOKIE_NAME, httponly=True, secure=True, samesite="strict")
+    auth.clear_session_cookie(response)
     return None
 
 
