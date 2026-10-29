@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, Depends, Response
 from fastapi.responses import JSONResponse
@@ -9,10 +9,11 @@ from sqlalchemy.orm import Session
 
 from app import auth
 from app.database import get_db
-from app.models import Department, Employee, JobTitle
+from app.models import AuditEvent, Department, Employee, JobTitle
 
 router = APIRouter(tags=["employees"])
-hr_only = Depends(auth.require_role("hr_admin"))
+hr_admin = auth.require_role("hr_admin")
+hr_only = Depends(hr_admin)
 _email = TypeAdapter(EmailStr)
 ROLES = {"employee", "manager", "hr_admin", "executive"}
 
@@ -43,6 +44,8 @@ def _out(db: Session, e: Employee) -> dict:
         "missing_manager": e.manager_id is None,
         "role": e.role,
         "status": e.status,
+        "account_status": e.status,
+        "leaving_date": e.leaving_date.isoformat() if e.leaving_date else None,
     }
 
 
@@ -114,9 +117,12 @@ def _invalid(errors: dict) -> JSONResponse:
 
 
 @router.get("/employees")
-def list_employees(db: Session = Depends(get_db), _hr=hr_only):
-    rows = db.scalars(select(Employee).order_by(Employee.full_name)).all()
-    return [_out(db, e) for e in rows]
+def list_employees(active_only: bool = False, db: Session = Depends(get_db), _hr=hr_only):
+    """The directory. Pickers for new goals, feedback and 1:1s pass active_only."""
+    query = select(Employee).order_by(Employee.full_name)
+    if active_only:
+        query = query.where(Employee.deactivated.is_(False), Employee.status == "active")
+    return [_out(db, e) for e in db.scalars(query).all()]
 
 
 @router.post("/employees", status_code=201)
@@ -204,6 +210,78 @@ def set_manager(
     if manager is not None and manager.role == "employee":
         manager.role = "manager"
     db.commit()
+    return _out(db, emp)
+
+
+class DeactivateIn(BaseModel):
+    leaving_date: date
+    reassign_manager_id: uuid.UUID | None = None
+
+
+@router.post("/employees/{employee_id}/deactivate")
+def deactivate(
+    employee_id: uuid.UUID,
+    body: DeactivateIn,
+    db: Session = Depends(get_db),
+    actor: Employee = Depends(hr_admin),
+):
+    """Mark a leaver deactivated, end their sessions, keep their record (NFR-010)."""
+    emp = db.get(Employee, employee_id)
+    if emp is None:
+        return Response(status_code=404)
+    reports = db.scalars(
+        select(Employee).where(Employee.manager_id == emp.id).order_by(Employee.full_name)
+    ).all()
+    new_manager = None
+    if reports:
+        if body.reassign_manager_id is None:
+            names = ", ".join(r.full_name for r in reports)
+            return _invalid(
+                {
+                    "reassign_manager_id": (
+                        f"{emp.full_name} still manages {names}. "
+                        "Choose a new manager for them before deactivating."
+                    )
+                }
+            )
+        new_manager = db.get(Employee, body.reassign_manager_id)
+        if new_manager is None:
+            return _invalid({"reassign_manager_id": "The chosen manager does not exist."})
+        if new_manager.id == emp.id or new_manager.deactivated or new_manager.status != "active":
+            return _invalid(
+                {"reassign_manager_id": "Choose an active employee as the new manager."}
+            )
+        chain = _manager_chain(db, new_manager.id)
+        for r in reports:
+            if r.id == new_manager.id or r.id in chain:
+                return _invalid(
+                    {
+                        "reassign_manager_id": (
+                            "This would make the reporting line circular, because "
+                            f"{new_manager.full_name} reports to {r.full_name}."
+                        )
+                    }
+                )
+        for r in reports:
+            r.manager_id = new_manager.id
+            r.updated_at = datetime.now(UTC)
+        if new_manager.role == "employee":
+            new_manager.role = "manager"
+    db.add(
+        AuditEvent(
+            actor_id=actor.id,
+            action="employee_deactivated",
+            entity_type="employee",
+            entity_id=emp.id,
+            subject_employee_id=emp.id,
+            details={
+                "leaving_date": body.leaving_date.isoformat(),
+                "reassigned_reports": [str(r.id) for r in reports],
+            },
+        )
+    )
+    emp.updated_at = datetime.now(UTC)
+    auth.deactivate_employee(db, emp, leaving_date=body.leaving_date)
     return _out(db, emp)
 
 

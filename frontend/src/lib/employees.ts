@@ -29,10 +29,41 @@ export interface Employee {
   missing_manager: boolean;
   role: string;
   status: string;
+  leaving_date?: string | null;
+}
+
+// Leavers are deactivated, never deleted (NFR-010), so every picker of people
+// for something new has to leave them out. The API spells the status either
+// way round, so compare case-insensitively.
+export const isDeactivated = (e: Pick<Employee, "status">) =>
+  (e.status ?? "").toLowerCase() === "deactivated";
+export const activeOnly = (people: Employee[]) => people.filter((p) => !isDeactivated(p));
+
+export interface RecordGoal {
+  id: string;
+  title: string;
+  status?: string;
+}
+export interface RecordReview {
+  id: string;
+  period: string;
+  status?: string;
+}
+export interface RecordFeedback {
+  id: string;
+  body: string;
+  from?: PersonRef | null;
 }
 export interface EmployeeRecord {
   employee: Employee;
   direct_reports: PersonRef[];
+  goals?: RecordGoal[];
+  self_reviews?: RecordReview[];
+  feedback?: RecordFeedback[];
+}
+export interface DeactivateInput {
+  leaving_date: string;
+  reassign_manager_id?: string;
 }
 export type Department = Ref;
 export type JobTitle = Ref;
@@ -126,6 +157,17 @@ export function useUpdateEmployee() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: EmployeeInput }) =>
       send<unknown>(`/employees/${encodeURIComponent(id)}`, "PATCH", input),
+    onSuccess: refetch,
+  });
+}
+
+// POST /employees/{id}/deactivate. A 422 naming reassign_manager_id means the
+// leaver still has direct reports and a new manager must be chosen first.
+export function useDeactivateEmployee() {
+  const refetch = useRefetchAll();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: DeactivateInput }) =>
+      send<Employee>(`/employees/${encodeURIComponent(id)}/deactivate`, "POST", input),
     onSuccess: refetch,
   });
 }

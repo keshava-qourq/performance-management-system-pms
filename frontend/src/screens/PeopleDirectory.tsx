@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useForm } from "react-hook-form";
 
 import { ApiError } from "@/lib/api";
 import { brand } from "@/lib/brand";
+import { formatDate } from "@/lib/dateFormat";
 import {
   FieldErrors,
+  activeOnly,
+  isDeactivated,
   useCreateEmployee,
+  useDeactivateEmployee,
   useDepartments,
   useEmployeeRecord,
   useEmployees,
@@ -107,6 +111,219 @@ function DirectReports({ employee }: { employee: Employee }) {
         </ul>
       )}
     </section>
+  );
+}
+
+// Everything the record keeps once someone has left (NFR-010): read-only, and
+// with no delete control anywhere in it.
+function RecordHistory({ employee }: { employee: Employee }) {
+  const record = useEmployeeRecord(employee.id);
+  const sections: Array<{ key: string; label: string; items: string[] }> = [
+    { key: "goals", label: "Goals", items: (record.data?.goals ?? []).map((g) => g.title) },
+    {
+      key: "reviews",
+      label: "Submitted reviews",
+      items: (record.data?.self_reviews ?? []).map((r) => r.period),
+    },
+    {
+      key: "feedback",
+      label: "Feedback",
+      items: (record.data?.feedback ?? []).map((f) => f.body),
+    },
+  ];
+  const total = sections.reduce((sum, s) => sum + s.items.length, 0);
+  return (
+    <section
+      aria-label="History"
+      className="pt-3 space-y-3"
+      style={{ borderTop: "1px solid " + LINE }}
+    >
+      <h3 className={eyebrow} style={muted}>
+        History
+      </h3>
+      {record.isLoading ? (
+        <p className="text-sm" style={muted}>
+          Loading this record…
+        </p>
+      ) : total === 0 ? (
+        <p className="text-sm" style={muted}>
+          Nothing has been recorded for {employee.full_name} yet. Goals, feedback and reviews from
+          their time here would be kept and shown here, and are never deleted.
+        </p>
+      ) : (
+        sections.map((s) => (
+          <div key={s.key}>
+            <h4 className="text-sm" style={{ color: brand.primaryColor }}>
+              {s.label}
+            </h4>
+            {s.items.length === 0 ? (
+              <p className="text-sm" style={muted}>
+                No {s.label.toLowerCase()} were recorded.
+              </p>
+            ) : (
+              <ul className="text-sm space-y-1" style={{ color: brand.primaryColor }}>
+                {s.items.map((text, i) => (
+                  <li key={i}>{text}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))
+      )}
+    </section>
+  );
+}
+
+// The leaver flow. Step one asks only for the leaving date; if the API refuses
+// because the leaver still manages people, step two lists them and asks for the
+// new manager before resubmitting.
+function DeactivateSection({
+  employee,
+  people,
+  onSaved,
+}: {
+  employee: Employee;
+  people: Employee[];
+  onSaved: (message: string) => void;
+}) {
+  const deactivate = useDeactivateEmployee();
+  const record = useEmployeeRecord(employee.id);
+  const [open, setOpen] = useState(false);
+  const [leavingDate, setLeavingDate] = useState("");
+  const [dateError, setDateError] = useState("");
+  const [managerError, setManagerError] = useState("");
+  const [reassign, setReassign] = useState("");
+  const [needsReassign, setNeedsReassign] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  const reports = record.data?.direct_reports ?? [];
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setFormError("");
+    setDateError("");
+    setManagerError("");
+    if (!leavingDate) {
+      setDateError("Enter the date this employee is leaving.");
+      return;
+    }
+    if (needsReassign && !reassign) {
+      setManagerError("Choose the manager who will take on these direct reports.");
+      return;
+    }
+    try {
+      await deactivate.mutateAsync({
+        id: employee.id,
+        input: {
+          leaving_date: leavingDate,
+          ...(needsReassign && reassign ? { reassign_manager_id: reassign } : {}),
+        },
+      });
+      onSaved(
+        `${employee.full_name} was deactivated. Their goals, feedback and reviews are kept on their record.`,
+      );
+      setOpen(false);
+      setNeedsReassign(false);
+    } catch (error) {
+      if (error instanceof FieldErrors) {
+        const { reassign_manager_id: manager, leaving_date: when, ...rest } = error.errors;
+        if (manager) {
+          setNeedsReassign(true);
+          setManagerError(manager);
+        }
+        if (when) setDateError(when);
+        const other = Object.values(rest);
+        if (other.length) setFormError(other.join(" "));
+      } else if (error instanceof ApiError && error.status === 403) {
+        setFormError("Only HR Admins can deactivate an employee, so nothing was changed.");
+      } else {
+        setFormError("The employee could not be deactivated. Try again.");
+      }
+    }
+  };
+
+  if (!open)
+    return (
+      <section className="pt-3" style={{ borderTop: "1px solid " + LINE }}>
+        <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>
+          Deactivate employee
+        </Button>
+        <p className="mt-1 text-xs" style={muted}>
+          Leavers are deactivated, never deleted: their goals, feedback and reviews stay on their
+          record.
+        </p>
+      </section>
+    );
+
+  return (
+    <form
+      onSubmit={submit}
+      noValidate
+      aria-label="Deactivate employee"
+      className="pt-3 space-y-3"
+      style={{ borderTop: "1px solid " + LINE }}
+    >
+      <div>
+        <Label htmlFor="leaving_date" className={eyebrow} style={muted}>
+          Leaving date
+        </Label>
+        <Input
+          id="leaving_date"
+          type="date"
+          value={leavingDate}
+          onChange={(e) => setLeavingDate(e.target.value)}
+          style={field}
+          aria-invalid={dateError ? true : undefined}
+          aria-describedby={dateError ? "leaving_date-error" : undefined}
+        />
+        <FieldError id="leaving_date-error" text={dateError} />
+      </div>
+      {needsReassign && (
+        <div>
+          <p className="text-sm" style={{ color: brand.primaryColor }}>
+            {employee.full_name} still manages{" "}
+            {reports.length === 1 ? "one person" : `${reports.length} people`}. Choose who they
+            report to from now on, then confirm the deactivation.
+          </p>
+          <ul className="my-2 text-sm space-y-1" style={muted} aria-label="Affected direct reports">
+            {reports.map((r) => (
+              <li key={r.id}>{r.full_name}</li>
+            ))}
+          </ul>
+          <Label htmlFor="reassign_manager_id" className={eyebrow} style={muted}>
+            New manager
+          </Label>
+          <Select
+            id="reassign_manager_id"
+            value={reassign}
+            onChange={(e) => setReassign(e.target.value)}
+            style={field}
+            options={[
+              { value: "", label: "Choose a new manager" },
+              ...activeOnly(people)
+                .filter((p) => p.id !== employee.id)
+                .map((p) => ({ value: p.id, label: p.full_name })),
+            ]}
+            aria-invalid={managerError ? true : undefined}
+            aria-describedby={managerError ? "reassign_manager_id-error" : undefined}
+          />
+          <FieldError id="reassign_manager_id-error" text={managerError} />
+        </div>
+      )}
+      {formError && (
+        <p role="alert" className="text-sm" style={warn}>
+          {formError}
+        </p>
+      )}
+      <div className="flex gap-2">
+        <Button type="submit" variant="secondary" disabled={deactivate.isPending}>
+          {needsReassign ? "Reassign and deactivate" : "Confirm deactivation"}
+        </Button>
+        <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
+    </form>
   );
 }
 
@@ -318,7 +535,7 @@ function EmployeePanel({
               style={field}
               options={[
                 { value: "", label: "No manager" },
-                ...people
+                ...activeOnly(people)
                   .filter((p) => p.id !== employee.id)
                   .map((p) => ({ value: p.id, label: p.full_name })),
               ]}
@@ -343,6 +560,17 @@ function EmployeePanel({
         </Button>
       </form>
       {employee && <DirectReports employee={employee} />}
+      {employee && isDeactivated(employee) && (
+        <p className="text-sm" style={muted}>
+          {`Deactivated${
+            employee.leaving_date ? ` · left on ${formatDate(employee.leaving_date)}` : ""
+          }. Their record is kept as employment evidence and cannot be deleted.`}
+        </p>
+      )}
+      {employee && <RecordHistory employee={employee} />}
+      {employee && !isDeactivated(employee) && (
+        <DeactivateSection employee={employee} people={people} onSaved={onSaved} />
+      )}
     </aside>
   );
 }
