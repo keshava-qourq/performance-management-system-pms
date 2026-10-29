@@ -7,7 +7,7 @@ from pydantic import BaseModel, EmailStr, TypeAdapter, ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import auth
+from app import auth, tokens
 from app.database import get_db
 from app.models import AuditEvent, Department, Employee, JobTitle
 
@@ -283,6 +283,31 @@ def deactivate(
     emp.updated_at = datetime.now(UTC)
     auth.deactivate_employee(db, emp, leaving_date=body.leaving_date)
     return _out(db, emp)
+
+
+@router.post("/employees/{employee_id}/password-resets", status_code=201)
+def issue_password_reset(
+    employee_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    actor: Employee = Depends(hr_admin),
+):
+    """HR issues a single-use reset link; any earlier one stops working (NFR-005)."""
+    emp = db.get(Employee, employee_id)
+    if emp is None:
+        return Response(status_code=404)
+    raw, row = tokens.issue_token(db, emp.id, "password_reset", actor.id)
+    db.add(
+        AuditEvent(
+            actor_id=actor.id,
+            action="password_reset_issued",
+            entity_type="employee",
+            entity_id=emp.id,
+            subject_employee_id=emp.id,
+            details={"token_id": str(row.id)},
+        )
+    )
+    db.commit()
+    return {"link": tokens.link_for(raw), "expires_at": row.expires_at.isoformat()}
 
 
 @router.get("/employees/{employee_id}/record")

@@ -1,6 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { useForm } from "react-hook-form";
 
+import {
+  useIssueInvitation,
+  useIssuePasswordReset,
+  useRevokeInvitation,
+  type IssuedLink,
+} from "@/lib/account";
 import { ApiError } from "@/lib/api";
 import { brand } from "@/lib/brand";
 import { formatDate } from "@/lib/dateFormat";
@@ -170,6 +176,159 @@ function RecordHistory({ employee }: { employee: Employee }) {
           </div>
         ))
       )}
+    </section>
+  );
+}
+
+// One issued link, shown so HR can copy it and pass it on by hand. Only the
+// newest link works (NFR-005), so the panel says so next to it.
+function LinkDisplay({ link, label }: { link: IssuedLink; label: string }) {
+  const [copied, setCopied] = useState("");
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link.link);
+      setCopied("Link copied to your clipboard.");
+    } catch {
+      setCopied("Copying failed. Select the link above and copy it yourself.");
+    }
+  };
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="issued-link" className={eyebrow} style={muted}>
+        {label}
+      </Label>
+      <Input id="issued-link" readOnly value={link.link} style={field} />
+      <div className="flex items-center gap-2">
+        <Button size="sm" variant="secondary" type="button" onClick={copy}>
+          Copy link
+        </Button>
+        <span className="text-xs" style={muted}>
+          {link.expires_at ? `Expires ${formatDate(link.expires_at.slice(0, 10))}` : ""}
+        </span>
+      </div>
+      <p role="status" className="text-xs" style={muted}>
+        {copied}
+      </p>
+      <p className="text-xs" style={muted}>
+        This link works once and only the newest link works: issuing or revoking another stops this
+        one immediately.
+      </p>
+    </div>
+  );
+}
+
+// Invitations and password-reset links (AC-018, AC-021, AC-029). Both kinds of
+// link are shown the same way.
+function AccountSection({ employee }: { employee: Employee }) {
+  const invite = useIssueInvitation();
+  const revoke = useRevokeInvitation();
+  const reset = useIssuePasswordReset();
+  const [link, setLink] = useState<{ value: IssuedLink; label: string } | null>(null);
+  const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
+
+  const accountStatus = employee.account_status ?? "No account";
+  const invited = accountStatus.toLowerCase() === "invited";
+  const hasAccount = accountStatus.toLowerCase() === "active";
+
+  const run = async (
+    action: () => Promise<IssuedLink | void>,
+    label: string,
+    message: string,
+    clears?: boolean,
+  ) => {
+    setError("");
+    setStatus("");
+    try {
+      const result = await action();
+      setLink(clears ? null : result ? { value: result, label } : null);
+      setStatus(message);
+    } catch (caught) {
+      setError(
+        caught instanceof ApiError && caught.message
+          ? caught.message
+          : "That could not be done. Try again.",
+      );
+    }
+  };
+
+  return (
+    <section
+      aria-label="Account access"
+      className="pt-3 space-y-3"
+      style={{ borderTop: "1px solid " + LINE }}
+    >
+      <h3 className={eyebrow} style={muted}>
+        Account access
+      </h3>
+      <p className="text-sm" style={{ color: brand.primaryColor }}>
+        Account status: {accountStatus}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {!hasAccount && (
+          <Button
+            size="sm"
+            variant="secondary"
+            type="button"
+            disabled={invite.isPending}
+            onClick={() =>
+              run(
+                () => invite.mutateAsync(employee.id),
+                "Invitation link",
+                invited
+                  ? "A new invitation link was issued. The previous link no longer works."
+                  : `${employee.full_name} was invited.`,
+              )
+            }
+          >
+            {invited ? "Reissue invitation" : "Invite"}
+          </Button>
+        )}
+        {invited && (
+          <Button
+            size="sm"
+            variant="secondary"
+            type="button"
+            disabled={revoke.isPending}
+            onClick={() =>
+              run(
+                () => revoke.mutateAsync(employee.id),
+                "",
+                "The invitation was revoked. That link no longer works.",
+                true,
+              )
+            }
+          >
+            Revoke invitation
+          </Button>
+        )}
+        <Button
+          size="sm"
+          variant="secondary"
+          type="button"
+          disabled={reset.isPending}
+          onClick={() =>
+            run(
+              () => reset.mutateAsync(employee.id),
+              "Password-reset link",
+              "A password-reset link was issued. Any earlier link no longer works.",
+            )
+          }
+        >
+          Issue password-reset link
+        </Button>
+      </div>
+      {status && (
+        <p role="status" className="text-sm" style={{ color: brand.primaryColor }}>
+          {status}
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="text-sm" style={warn}>
+          {error}
+        </p>
+      )}
+      {link && <LinkDisplay link={link.value} label={link.label} />}
     </section>
   );
 }
@@ -559,6 +718,7 @@ function EmployeePanel({
           {employee ? "Save changes" : "Create employee"}
         </Button>
       </form>
+      {employee && !isDeactivated(employee) && <AccountSection employee={employee} />}
       {employee && <DirectReports employee={employee} />}
       {employee && isDeactivated(employee) && (
         <p className="text-sm" style={muted}>
@@ -669,13 +829,19 @@ export default function DirectoryTab() {
               <Table>
                 <THead>
                   <TR>
-                    {["Employee", "Job title", "Department", "Manager", "Status", ""].map(
-                      (h, i) => (
-                        <TH key={i} style={muted}>
-                          {h}
-                        </TH>
-                      ),
-                    )}
+                    {[
+                      "Employee",
+                      "Job title",
+                      "Department",
+                      "Manager",
+                      "Status",
+                      "Account",
+                      "",
+                    ].map((h, i) => (
+                      <TH key={i} style={muted}>
+                        {h}
+                      </TH>
+                    ))}
                   </TR>
                 </THead>
                 <TBody>
@@ -711,6 +877,7 @@ export default function DirectoryTab() {
                         )}
                       </TD>
                       <TD>{e.status}</TD>
+                      <TD>{e.account_status ?? "No account"}</TD>
                       <TD>
                         {canManage && (
                           <Button

@@ -8,6 +8,7 @@ import Goals from "@/screens/Goals";
 import Reviews from "@/screens/Reviews";
 import OneOnOnes from "@/screens/OneOnOnes";
 import People from "@/screens/People";
+import SetPassword from "@/screens/SetPassword";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -85,6 +86,9 @@ export default function App() {
   return (
     <Routes>
       <Route path="/sign-in" element={<SignIn />} />
+      {/* Invitation and reset links open here, signed out. */}
+      <Route path="/set-password" element={<SetPassword />} />
+      <Route path="/set-password/:token" element={<SetPassword />} />
       <Route element={<Shell />}>
         <Route path="/my-performance" element={<MyPerformance />} />
         <Route path="/goals" element={<Goals />} />

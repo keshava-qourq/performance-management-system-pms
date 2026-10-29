@@ -29,6 +29,8 @@ export interface Employee {
   missing_manager: boolean;
   role: string;
   status: string;
+  // "No account" | "Invited" | "Active" -- whether this person can sign in yet.
+  account_status?: string | null;
   leaving_date?: string | null;
 }
 
