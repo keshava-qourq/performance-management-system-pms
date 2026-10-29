@@ -2,6 +2,1691 @@
 openapi: 3.1.0
 info:
   title: Performance management System (PMS)
-  version: architecture-v0
+  version: architecture-v1
   description: Designed API from the approved architecture (not extracted from code).
-paths: {}
+paths:
+  /action-items/{id}/complete:
+    post:
+      summary: Mark an action item complete.
+      description: Mark an action item complete.
+      operationId: post_action_items_id_complete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '-'
+      responses:
+        '200':
+          description: 200 {completed_at, completed_by}
+      security:
+      - bearerAuth: []
+  /audit-events:
+    get:
+      summary: Read the audit trail. Read-only, with no edit or delete endpoints.
+      description: Read the audit trail. Read-only, with no edit or delete endpoints.
+      operationId: get_audit_events
+      parameters: []
+      responses:
+        '200':
+          description: '[audit_event]'
+      security:
+      - bearerAuth: []
+  /auth/login:
+    post:
+      summary: Sign in with email and password. Gives a generic error on failure and
+        applies lockout.
+      description: Sign in with email and password. Gives a generic error on failure
+        and applies lockout.
+      operationId: post_auth_login
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{email, password}'
+      responses:
+        '200':
+          description: 200 {employee, role} + session cookie | 401 generic
+  /auth/logout:
+    post:
+      summary: End the current session.
+      description: End the current session.
+      operationId: post_auth_logout
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '-'
+      responses:
+        '200':
+          description: '204'
+      security:
+      - bearerAuth: []
+  /auth/me:
+    get:
+      summary: Current user with role and derived is_manager.
+      description: Current user with role and derived is_manager.
+      operationId: get_auth_me
+      parameters: []
+      responses:
+        '200':
+          description: '{id, full_name, role, is_manager}'
+      security:
+      - bearerAuth: []
+  /auth/password:
+    post:
+      summary: Change password by supplying the current one.
+      description: Change password by supplying the current one.
+      operationId: post_auth_password
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{current_password, new_password}'
+      responses:
+        '200':
+          description: 204 | 422 {unmet_rules[]}
+      security:
+      - bearerAuth: []
+  /auth/tokens/{token}:
+    get:
+      summary: Check whether an invitation or reset link is valid.
+      description: Check whether an invitation or reset link is valid.
+      operationId: get_auth_tokens_token
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: '{purpose, valid, password_rules} | 410'
+  /auth/tokens/{token}/accept:
+    post:
+      summary: Set a password using an invite or reset link. The link is single-use.
+      description: Set a password using an invite or reset link. The link is single-use.
+      operationId: post_auth_tokens_token_accept
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{password}'
+      responses:
+        '200':
+          description: 200 + session cookie | 410 | 422 {unmet_rules[]}
+  /departments:
+    get:
+      summary: List departments with active employee counts. Sibling POST, PATCH and
+        DELETE are HR only. DELETE is blocked while employ
+      description: List departments with active employee counts. Sibling POST, PATCH
+        and DELETE are HR only. DELETE is blocked while employees are assigned.
+      operationId: get_departments
+      parameters: []
+      responses:
+        '200':
+          description: '[{id, name, active_count}] | DELETE 409 {active_count}'
+      security:
+      - bearerAuth: []
+  /employees:
+    get:
+      summary: Employee directory and pickers. Use active_only for pickers. Rows missing
+        a manager are flagged.
+      description: Employee directory and pickers. Use active_only for pickers. Rows
+        missing a manager are flagged.
+      operationId: get_employees
+      parameters: []
+      responses:
+        '200':
+          description: '[{id, full_name, job_title, department, manager, status, account_status,
+            missing_manager}]'
+      security:
+      - bearerAuth: []
+    post:
+      summary: Create an employee record.
+      description: Create an employee record.
+      operationId: post_employees
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{full_name, work_email, job_title_id, department_id, role}'
+      responses:
+        '200':
+          description: 201 employee | 422 field errors
+      security:
+      - bearerAuth: []
+  /employees/{id}:
+    patch:
+      summary: Edit employee details or role. The last-HR-Admin guard applies.
+      description: Edit employee details or role. The last-HR-Admin guard applies.
+      operationId: patch_employees_id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{full_name?, work_email?, job_title_id?, department_id?,
+                role?}'
+      responses:
+        '200':
+          description: 200 | 409 last HR Admin | 422
+      security:
+      - bearerAuth: []
+  /employees/{id}/deactivate:
+    post:
+      summary: Deactivate a leaver and revoke their sessions. Requires direct reports
+        to be reassigned first.
+      description: Deactivate a leaver and revoke their sessions. Requires direct
+        reports to be reassigned first.
+      operationId: post_employees_id_deactivate
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{leaving_date, reassign_reports_to?}'
+      responses:
+        '200':
+          description: 200 | 409 {direct_reports[]}
+      security:
+      - bearerAuth: []
+  /employees/{id}/invitations:
+    post:
+      summary: Issue or reissue an invitation link. Earlier links are revoked.
+      description: Issue or reissue an invitation link. Earlier links are revoked.
+      operationId: post_employees_id_invitations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '-'
+      responses:
+        '200':
+          description: 201 {link, expires_at}
+      security:
+      - bearerAuth: []
+    delete:
+      summary: Revoke an outstanding invitation.
+      description: Revoke an outstanding invitation.
+      operationId: delete_employees_id_invitations
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: '204'
+      security:
+      - bearerAuth: []
+  /employees/{id}/manager:
+    put:
+      summary: Set or reassign a manager. Self-management and circular lines are rejected.
+      description: Set or reassign a manager. Self-management and circular lines are
+        rejected.
+      operationId: put_employees_id_manager
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{manager_id|null}'
+      responses:
+        '200':
+          description: 200 | 422 circular reporting line
+      security:
+      - bearerAuth: []
+  /employees/{id}/password-resets:
+    post:
+      summary: Issue a single-use password-reset link.
+      description: Issue a single-use password-reset link.
+      operationId: post_employees_id_password_resets
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '-'
+      responses:
+        '200':
+          description: 201 {link, expires_at}
+      security:
+      - bearerAuth: []
+  /employees/{id}/record:
+    get:
+      summary: Employee review record. Every view is audited.
+      description: Employee review record. Every view is audited.
+      operationId: get_employees_id_record
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: '{goals[], self_reviews[], feedback[]?}'
+      security:
+      - bearerAuth: []
+  /feedback:
+    get:
+      summary: Received or given feedback, newest first.
+      description: Received or given feedback, newest first.
+      operationId: get_feedback
+      parameters: []
+      responses:
+        '200':
+          description: '[{id, author, recipient, type, body, goal, created_at, withdrawn}]'
+      security:
+      - bearerAuth: []
+    post:
+      summary: Send praise or constructive feedback.
+      description: Send praise or constructive feedback.
+      operationId: post_feedback
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{recipient_id, type, body, goal_id?}'
+      responses:
+        '200':
+          description: 201 | 422
+      security:
+      - bearerAuth: []
+  /feedback/audience:
+    get:
+      summary: Who will be able to read feedback sent to a recipient.
+      description: Who will be able to read feedback sent to a recipient.
+      operationId: get_feedback_audience
+      parameters: []
+      responses:
+        '200':
+          description: '{readers_statement}'
+      security:
+      - bearerAuth: []
+  /feedback/{id}/withdraw:
+    post:
+      summary: Withdraw sent feedback. Audited.
+      description: Withdraw sent feedback. Audited.
+      operationId: post_feedback_id_withdraw
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '-'
+      responses:
+        '200':
+          description: '200'
+      security:
+      - bearerAuth: []
+  /goals:
+    get:
+      summary: List goals for the caller, or for a permitted employee. Includes overdue
+        flags and a weighting warning.
+      description: List goals for the caller, or for a permitted employee. Includes
+        overdue flags and a weighting warning.
+      operationId: get_goals
+      parameters: []
+      responses:
+        '200':
+          description: '{goals[{..., overdue, parent_title}], weighting_total, over_100_warning}'
+      security:
+      - bearerAuth: []
+    post:
+      summary: Create a goal. Company and department levels are HR only.
+      description: Create a goal. Company and department levels are HR only.
+      operationId: post_goals
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{title, description?, target, due_date, period, weighting?,
+                parent_goal_id?, level?, department_id?}'
+      responses:
+        '200':
+          description: 201 goal | 422
+      security:
+      - bearerAuth: []
+  /goals/parent-options:
+    get:
+      summary: Company goals plus goals of the caller's own department.
+      description: Company goals plus goals of the caller's own department.
+      operationId: get_goals_parent_options
+      parameters: []
+      responses:
+        '200':
+          description: '[{id, title, level}]'
+      security:
+      - bearerAuth: []
+  /goals/{id}:
+    get:
+      summary: Goal detail with the visible aligned children, comments and progress
+        history.
+      description: Goal detail with the visible aligned children, comments and progress
+        history.
+      operationId: get_goals_id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: '{goal, children[], comments[], history[]}'
+      security:
+      - bearerAuth: []
+    patch:
+      summary: Edit goal fields or alignment. Audited, and alignment cycles are rejected.
+      description: Edit goal fields or alignment. Audited, and alignment cycles are
+        rejected.
+      operationId: patch_goals_id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{title?, description?, target?, due_date?, weighting?,
+                parent_goal_id?}'
+      responses:
+        '200':
+          description: 200 {updated_by, updated_at} | 422
+      security:
+      - bearerAuth: []
+    delete:
+      summary: Soft-delete a goal. Blocked while child goals are aligned.
+      description: Soft-delete a goal. Blocked while child goals are aligned.
+      operationId: delete_goals_id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 204 | 409 {child_count}
+      security:
+      - bearerAuth: []
+  /goals/{id}/comments:
+    post:
+      summary: Add a comment to a goal.
+      description: Add a comment to a goal.
+      operationId: post_goals_id_comments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{body}'
+      responses:
+        '200':
+          description: '201'
+      security:
+      - bearerAuth: []
+  /goals/{id}/progress:
+    post:
+      summary: Record manual progress and status.
+      description: Record manual progress and status.
+      operationId: post_goals_id_progress
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{progress 0-100, status}'
+      responses:
+        '200':
+          description: 200 | 422
+      security:
+      - bearerAuth: []
+  /job-titles:
+    get:
+      summary: List job titles. Sibling POST and PATCH (rename) are HR only.
+      description: List job titles. Sibling POST and PATCH (rename) are HR only.
+      operationId: get_job_titles
+      parameters: []
+      responses:
+        '200':
+          description: '[{id, name}]'
+      security:
+      - bearerAuth: []
+  /me/dashboard:
+    get:
+      summary: Own goals, recent feedback, reviews, needs-attention items and the
+        unread feedback count.
+      description: Own goals, recent feedback, reviews, needs-attention items and
+        the unread feedback count.
+      operationId: get_me_dashboard
+      parameters: []
+      responses:
+        '200':
+          description: '{goals[], feedback[], reviews[], attention[], unread_feedback}'
+      security:
+      - bearerAuth: []
+  /me/profile:
+    get:
+      summary: Own profile. HR-owned fields are flagged read-only.
+      description: Own profile. HR-owned fields are flagged read-only.
+      operationId: get_me_profile
+      parameters: []
+      responses:
+        '200':
+          description: '{full_name, work_email, job_title, department, manager, display_name,
+            pronouns, photo_url}'
+      security:
+      - bearerAuth: []
+    patch:
+      summary: Update self-owned fields.
+      description: Update self-owned fields.
+      operationId: patch_me_profile
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{display_name?, pronouns?}'
+      responses:
+        '200':
+          description: '200'
+      security:
+      - bearerAuth: []
+  /me/profile/photo:
+    put:
+      summary: Upload a profile photo to S3.
+      description: Upload a profile photo to S3.
+      operationId: put_me_profile_photo
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: multipart image
+      responses:
+        '200':
+          description: 200 {photo_url}
+      security:
+      - bearerAuth: []
+  /me/record:
+    get:
+      summary: Own full history grouped by period.
+      description: Own full history grouped by period.
+      operationId: get_me_record
+      parameters: []
+      responses:
+        '200':
+          description: '{periods[{period, goals[], self_review, feedback[]}]}'
+      security:
+      - bearerAuth: []
+  /one-on-ones:
+    get:
+      summary: List my 1:1s and open action items.
+      description: List my 1:1s and open action items.
+      operationId: get_one_on_ones
+      parameters: []
+      responses:
+        '200':
+          description: '[{id, counterpart, meeting_date}]'
+      security:
+      - bearerAuth: []
+    post:
+      summary: Create a 1:1. A report is auto-paired with their manager.
+      description: Create a 1:1. A report is auto-paired with their manager.
+      operationId: post_one_on_ones
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{report_id?, meeting_date}'
+      responses:
+        '200':
+          description: 201 | 403
+      security:
+      - bearerAuth: []
+  /one-on-ones/{id}:
+    get:
+      summary: 1:1 detail with agenda, action items and carry-over. The private note
+        is only included where permitted.
+      description: 1:1 detail with agenda, action items and carry-over. The private
+        note is only included where permitted.
+      operationId: get_one_on_ones_id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: '{..., talking_points[], action_items[], carry_over[], private_note?,
+            hr_can_read_private_notes}'
+      security:
+      - bearerAuth: []
+    patch:
+      summary: Change the meeting date.
+      description: Change the meeting date.
+      operationId: patch_one_on_ones_id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{meeting_date}'
+      responses:
+        '200':
+          description: '200'
+      security:
+      - bearerAuth: []
+  /one-on-ones/{id}/action-items:
+    post:
+      summary: Add an action item.
+      description: Add an action item.
+      operationId: post_one_on_ones_id_action_items
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{description, owner_id, due_date}'
+      responses:
+        '200':
+          description: '201'
+      security:
+      - bearerAuth: []
+  /one-on-ones/{id}/private-note:
+    put:
+      summary: Save the manager's private note.
+      description: Save the manager's private note.
+      operationId: put_one_on_ones_id_private_note
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{body}'
+      responses:
+        '200':
+          description: '200'
+      security:
+      - bearerAuth: []
+  /one-on-ones/{id}/talking-points:
+    post:
+      summary: Add a talking point. PATCH and DELETE /talking-points/{id} are author
+        only, except discussed, which either participant c
+      description: Add a talking point. PATCH and DELETE /talking-points/{id} are
+        author only, except discussed, which either participant can set.
+      operationId: post_one_on_ones_id_talking_points
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{body}'
+      responses:
+        '200':
+          description: '201'
+      security:
+      - bearerAuth: []
+  /one-on-ones/{id}/talking-points/order:
+    put:
+      summary: Reorder the agenda.
+      description: Reorder the agenda.
+      operationId: put_one_on_ones_id_talking_points_order
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{ids[]}'
+      responses:
+        '200':
+          description: '200'
+      security:
+      - bearerAuth: []
+  /org/summary:
+    get:
+      summary: 'Aggregate counts only: headcount, goals by status and self-review
+        submission counts. No individual data.'
+      description: 'Aggregate counts only: headcount, goals by status and self-review
+        submission counts. No individual data.'
+      operationId: get_org_summary
+      parameters: []
+      responses:
+        '200':
+          description: '{counts}'
+      security:
+      - bearerAuth: []
+  /questionnaires:
+    post:
+      summary: Create or replace a questionnaire template with competencies and questions.
+        Sibling GET and PUT exist.
+      description: Create or replace a questionnaire template with competencies and
+        questions. Sibling GET and PUT exist.
+      operationId: post_questionnaires
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{name, rating_scale_id, competencies[{name, questions[{text,type,mandatory}]}]}'
+      responses:
+        '200':
+          description: '201'
+      security:
+      - bearerAuth: []
+  /questionnaires/{id}/publish:
+    post:
+      summary: Publish a template. Blocked when it has no questions.
+      description: Publish a template. Blocked when it has no questions.
+      operationId: post_questionnaires_id_publish
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '-'
+      responses:
+        '200':
+          description: 200 | 422
+      security:
+      - bearerAuth: []
+  /rating-scales:
+    post:
+      summary: Create a rating scale with points and labels.
+      description: Create a rating scale with points and labels.
+      operationId: post_rating_scales
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{name, labels[{value,label}]}'
+      responses:
+        '200':
+          description: '201'
+      security:
+      - bearerAuth: []
+  /review-periods:
+    post:
+      summary: Create a draft review period. PATCH and PUT /participants are available
+        while it is draft.
+      description: Create a draft review period. PATCH and PUT /participants are available
+        while it is draft.
+      operationId: post_review_periods
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{name, template_id, start_date, end_date, submission_deadline,
+                participant_ids[]}'
+      responses:
+        '200':
+          description: '201'
+      security:
+      - bearerAuth: []
+  /review-periods/{id}/close:
+    post:
+      summary: Close the period. Submission is no longer possible.
+      description: Close the period. Submission is no longer possible.
+      operationId: post_review_periods_id_close
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '-'
+      responses:
+        '200':
+          description: '200'
+      security:
+      - bearerAuth: []
+  /review-periods/{id}/open:
+    post:
+      summary: Open the period. Self-review tasks are created by a queued job.
+      description: Open the period. Self-review tasks are created by a queued job.
+      operationId: post_review_periods_id_open
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '-'
+      responses:
+        '200':
+          description: '202'
+      security:
+      - bearerAuth: []
+  /review-periods/{id}/participants/{employee_id}:
+    delete:
+      summary: Remove a participant. Blocked if they have already submitted.
+      description: Remove a participant. Blocked if they have already submitted.
+      operationId: delete_review_periods_id_participants_employee_id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: employee_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 204 | 409
+      security:
+      - bearerAuth: []
+  /review-periods/{id}/status:
+    get:
+      summary: Submitted vs outstanding participants.
+      description: Submitted vs outstanding participants.
+      operationId: get_review_periods_id_status
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: '[{employee, status, submitted_at}]'
+      security:
+      - bearerAuth: []
+  /self-reviews/{id}:
+    get:
+      summary: A self-review. Drafts are visible only to the owner. Submitted reviews
+        are rendered from the snapshot.
+      description: A self-review. Drafts are visible only to the owner. Submitted
+        reviews are rendered from the snapshot.
+      operationId: get_self_reviews_id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: '{questionnaire, answers, status, overdue, submitted_at}'
+      security:
+      - bearerAuth: []
+  /self-reviews/{id}/answers:
+    put:
+      summary: Save a draft.
+      description: Save a draft.
+      operationId: put_self_reviews_id_answers
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{answers[{question_id, rating?, comment?}]}'
+      responses:
+        '200':
+          description: 200 | 409 locked
+      security:
+      - bearerAuth: []
+  /self-reviews/{id}/history:
+    get:
+      summary: Chronological, immutable review history.
+      description: Chronological, immutable review history.
+      operationId: get_self_reviews_id_history
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: '[{action, actor, reason, created_at}]'
+      security:
+      - bearerAuth: []
+  /self-reviews/{id}/reopen:
+    post:
+      summary: Reopen for editing with a reason.
+      description: Reopen for editing with a reason.
+      operationId: post_self_reviews_id_reopen
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{reason}'
+      responses:
+        '200':
+          description: '200'
+      security:
+      - bearerAuth: []
+  /self-reviews/{id}/submit:
+    post:
+      summary: Submit and lock the review.
+      description: Submit and lock the review.
+      operationId: post_self_reviews_id_submit
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '-'
+      responses:
+        '200':
+          description: 200 | 422 {unanswered[]}
+      security:
+      - bearerAuth: []
+  /settings:
+    get:
+      summary: Read system settings. PUT updates them and is HR only.
+      description: Read system settings. PUT updates them and is HR only.
+      operationId: get_settings
+      parameters: []
+      responses:
+        '200':
+          description: '{password rules, session_idle_minutes, login_lock_threshold,
+            manager_feedback_visible, hr_private_notes_visible}'
+      security:
+      - bearerAuth: []
+  /team/goals:
+    get:
+      summary: Direct reports with their goals.
+      description: Direct reports with their goals.
+      operationId: get_team_goals
+      parameters: []
+      responses:
+        '200':
+          description: '[{employee, goals[]}]'
+      security:
+      - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    department:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - name
+      - created_at
+    job_title:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - id
+      - name
+    employee:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        work_email:
+          type: string
+        display_name:
+          type: string
+        pronouns:
+          type: string
+        photo_s3_key:
+          type: string
+        job_title_id:
+          type: string
+          format: uuid
+        department_id:
+          type: string
+          format: uuid
+        manager_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+        status:
+          type: string
+        leaving_date:
+          type: string
+          format: date
+        account_status:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - full_name
+      - work_email
+      - role
+      - status
+      - account_status
+      - updated_at
+    user_credential:
+      type: object
+      properties:
+        employee_id:
+          type: string
+          format: uuid
+        password_hash:
+          type: string
+        failed_attempts:
+          type: integer
+        locked_until:
+          type: string
+          format: date-time
+        password_changed_at:
+          type: string
+          format: date-time
+      required:
+      - employee_id
+      - password_hash
+      - failed_attempts
+      - password_changed_at
+    account_token:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        employee_id:
+          type: string
+          format: uuid
+        purpose:
+          type: string
+        token_hash:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        used_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+        issued_by:
+          type: string
+          format: uuid
+      required:
+      - id
+      - employee_id
+      - purpose
+      - token_hash
+      - expires_at
+      - issued_by
+    session:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        employee_id:
+          type: string
+          format: uuid
+        token_hash:
+          type: string
+        last_seen_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - employee_id
+      - token_hash
+      - last_seen_at
+    goal:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        level:
+          type: string
+        owner_id:
+          type: string
+          format: uuid
+        department_id:
+          type: string
+          format: uuid
+        parent_goal_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        target:
+          type: string
+        due_date:
+          type: string
+          format: date
+        period:
+          type: string
+        weighting:
+          type: number
+        progress:
+          type: number
+        status:
+          type: string
+        updated_by:
+          type: string
+          format: uuid
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - level
+      - owner_id
+      - title
+      - target
+      - due_date
+      - period
+      - progress
+      - status
+      - updated_by
+      - updated_at
+    goal_progress_update:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        goal_id:
+          type: string
+          format: uuid
+        progress:
+          type: number
+        status:
+          type: string
+        updated_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - goal_id
+      - progress
+      - status
+      - updated_by
+      - created_at
+    goal_comment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        goal_id:
+          type: string
+          format: uuid
+        author_id:
+          type: string
+          format: uuid
+        body:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - goal_id
+      - author_id
+      - body
+      - created_at
+    rating_scale:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        labels:
+          type: string
+      required:
+      - id
+      - name
+      - labels
+    questionnaire_template:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+        rating_scale_id:
+          type: string
+          format: uuid
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - name
+      - status
+      - rating_scale_id
+      - updated_at
+    competency:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        template_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        position:
+          type: integer
+      required:
+      - id
+      - template_id
+      - name
+      - position
+    question:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        competency_id:
+          type: string
+          format: uuid
+        text:
+          type: string
+        type:
+          type: string
+        mandatory:
+          type: boolean
+        position:
+          type: integer
+      required:
+      - id
+      - competency_id
+      - text
+      - type
+      - mandatory
+      - position
+    review_period:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        template_id:
+          type: string
+          format: uuid
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        submission_deadline:
+          type: string
+          format: date
+        status:
+          type: string
+        opened_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - name
+      - template_id
+      - start_date
+      - end_date
+      - submission_deadline
+      - status
+    review_participant:
+      type: object
+      properties:
+        period_id:
+          type: string
+          format: uuid
+        employee_id:
+          type: string
+          format: uuid
+      required:
+      - period_id
+      - employee_id
+    self_review:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        period_id:
+          type: string
+          format: uuid
+        employee_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        questionnaire_snapshot:
+          type: string
+        submitted_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - period_id
+      - employee_id
+      - status
+      - updated_at
+    self_review_answer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        self_review_id:
+          type: string
+          format: uuid
+        question_id:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+        comment:
+          type: string
+      required:
+      - id
+      - self_review_id
+      - question_id
+    self_review_history:
+      type: object
+      properties:
+        id:
+          type: string
+        self_review_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+        actor_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - self_review_id
+      - action
+      - actor_id
+      - created_at
+    feedback:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        author_id:
+          type: string
+          format: uuid
+        recipient_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        body:
+          type: string
+        goal_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        read_at:
+          type: string
+          format: date-time
+        withdrawn_at:
+          type: string
+          format: date-time
+        withdrawn_by:
+          type: string
+          format: uuid
+      required:
+      - id
+      - author_id
+      - recipient_id
+      - type
+      - body
+      - created_at
+    one_on_one:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        manager_id:
+          type: string
+          format: uuid
+        report_id:
+          type: string
+          format: uuid
+        meeting_date:
+          type: string
+          format: date
+        created_by:
+          type: string
+          format: uuid
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - manager_id
+      - report_id
+      - meeting_date
+      - created_by
+      - updated_at
+    one_on_one_private_note:
+      type: object
+      properties:
+        one_on_one_id:
+          type: string
+          format: uuid
+        manager_id:
+          type: string
+          format: uuid
+        body:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - one_on_one_id
+      - manager_id
+      - body
+      - updated_at
+    talking_point:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        one_on_one_id:
+          type: string
+          format: uuid
+        author_id:
+          type: string
+          format: uuid
+        body:
+          type: string
+        position:
+          type: integer
+        discussed:
+          type: boolean
+      required:
+      - id
+      - one_on_one_id
+      - author_id
+      - body
+      - position
+      - discussed
+    action_item:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        one_on_one_id:
+          type: string
+          format: uuid
+        owner_id:
+          type: string
+          format: uuid
+        description:
+          type: string
+        due_date:
+          type: string
+          format: date
+        completed_at:
+          type: string
+          format: date-time
+        completed_by:
+          type: string
+          format: uuid
+      required:
+      - id
+      - one_on_one_id
+      - owner_id
+      - description
+      - due_date
+    system_setting:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+        updated_by:
+          type: string
+          format: uuid
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - key
+      - value
+      - updated_at
+    audit_event:
+      type: object
+      properties:
+        id:
+          type: string
+        actor_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+        entity_type:
+          type: string
+        entity_id:
+          type: string
+          format: uuid
+        subject_employee_id:
+          type: string
+          format: uuid
+        details:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - action
+      - entity_type
+      - created_at
