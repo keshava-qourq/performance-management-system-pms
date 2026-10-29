@@ -9,13 +9,13 @@ Built from recorded links, not written by a model: requirement key → plan item
 <!-- sdlc:auto:start matrix -->
 | Requirement | Epic | Title | Plan items | Sprint | Design | Code | Commits | Ticket | Tests | AC tests | Deployed |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| US-001 | EPIC-001 | HR creates and maintains employee records | US-001 | 1 | GET /employees, PATCH /employees/{id}, POST /employees, database, department, employee, job_title, org, web_app | — | — | not started | not run | 0/4 tested · 0/4 passing | — |
-| US-002 | EPIC-001 | HR maintains departments and job titles | US-002 | 1 | GET /departments, GET /job-titles, database, department, job_title, org, web_app | — | — | not started | not run | 0/3 tested · 0/3 passing | — |
+| US-001 | EPIC-001 | HR creates and maintains employee records | US-001 | 1 | GET /employees, PATCH /employees/{id}, POST /employees, database, department, employee, job_title, org, web_app | backend/app/main.py, backend/app/routers/employees.py, backend/tests/integration/test_employees.py, backend/tests/integration/test_employees_qa.py, frontend/e2e/employees.spec.ts +4 more | 4a98e5d | delivered | not run | 0/4 tested · 0/4 passing | 66559e219ee3 |
+| US-002 | EPIC-001 | HR maintains departments and job titles | US-002 | 1 | GET /departments, GET /job-titles, database, department, job_title, org, web_app | — | — | skipped | not run | 0/3 tested · 0/3 passing | — |
 | US-003 | EPIC-001 | HR sets reporting lines | US-003 | 2 | PUT /employees/{id}/manager, employee, org, web_app | — | — | not started | not run | 0/4 tested · 0/4 passing | — |
 | US-004 | EPIC-001 | HR assigns system roles | US-004 | 2 | PATCH /employees/{id}, auth, employee, org | — | — | not started | not run | 0/3 tested · 0/3 passing | — |
 | US-005 | EPIC-001 | HR deactivates a leaver | US-005 | 2 | POST /employees/{id}/deactivate, auth, employee, org, session, web_app | — | — | not started | not run | 0/3 tested · 0/3 passing | — |
 | US-006 | EPIC-002 | HR invites an employee to create an account | US-006 | 2 | DELETE /employees/{id}/invitations, GET /auth/tokens/{token}, POST /auth/tokens/{token}/accept, POST /employees/{id}/invitations, account_token, auth, employee, org, user_credential, web_app | — | — | not started | not run | 0/4 tested · 0/4 passing | — |
-| US-007 | EPIC-002 | Employee signs in and out | US-007 | 1 | GET /auth/me, POST /auth/login, POST /auth/logout, audit, audit_event, auth, session, system_setting, user_credential, web_app | — | — | not started | not run | 0/5 tested · 0/5 passing | — |
+| US-007 | EPIC-002 | Employee signs in and out | US-007 | 1 | GET /auth/me, POST /auth/login, POST /auth/logout, audit, audit_event, auth, session, system_setting, user_credential, web_app | backend/alembic/versions/0001_auth.py, backend/app/auth.py, backend/app/main.py, backend/app/models.py, backend/app/routers/auth.py +14 more | 2f2069e | delivered | not run | 0/5 tested · 0/5 passing | 66559e219ee3 |
 | US-008 | EPIC-002 | Password rules and reset | US-008 | 2 | POST /auth/password, POST /employees/{id}/password-resets, account_token, auth, system_setting, user_credential, web_app | — | — | not started | not run | 0/4 tested · 0/4 passing | — |
 | US-009 | EPIC-002 | Employee maintains a personal profile | US-009 | 3 | GET /me/profile, PATCH /me/profile, PUT /me/profile/photo, employee, file_store, org, web_app | — | — | not started | not run | 0/3 tested · 0/3 passing | — |
 | US-010 | EPIC-002 | Role-based least-privilege access is enforced | US-010, US-010-T1, US-010-T2, US-010-T3 | 3 | access_policy, auth, employee, org, session | — | — | not started | not run | 0/4 tested · 0/4 passing | — |
@@ -40,8 +40,8 @@ Built from recorded links, not written by a model: requirement key → plan item
 | US-029 | EPIC-007 | See my performance at a glance | US-029 | 7 | action_item, dashboard, feedback, goal, self_review, web_app | — | — | not started | not run | 0/4 tested · 0/4 passing | — |
 | US-030 | EPIC-007 | Browse a single employee's review record | US-030 | 7 | access_policy, audit, audit_event, dashboard, feedback, goal, review_period, self_review, web_app | — | — | not started | not run | 0/5 tested · 0/5 passing | — |
 | US-031 | EPIC-007 | See my own full review record | US-031 | 7 | dashboard, feedback, goal, review_period, self_review, web_app | — | — | not started | not run | 0/2 tested · 0/2 passing | — |
-| US-032 | EPIC-008 | English-only interface | US-032 | 1 | web_app | — | — | not started | not run | 0/2 tested · 0/2 passing | — |
+| US-032 | EPIC-008 | English-only interface | US-032 | 1 | web_app | frontend/src/App.i18n.test.tsx, frontend/src/App.tsx, frontend/src/lib/dateFormat.test.ts, frontend/src/lib/dateFormat.ts, frontend/src/main.tsx +2 more | 3d14a91 | delivered | not run | 0/2 tested · 0/2 passing | 66559e219ee3 |
 | US-033 | EPIC-008 | No payment, billing or subscription functionality | US-033 | 8 | — | — | — | not started | not run | 0/3 tested · 0/3 passing | — |
 | US-034 | EPIC-008 | Responsive web access on any device | US-034 | 8 | web_app | — | — | not started | not run | 0/2 tested · 0/2 passing | — |
-| US-035 | EPIC-008 | Sensitive data is protected and recoverable | US-035 | 1 | database, file_store | — | — | not started | not run | 0/5 tested · 0/5 passing | — |
+| US-035 | EPIC-008 | Sensitive data is protected and recoverable | US-035 | 1 | database, file_store | — | — | skipped | not run | 0/5 tested · 0/5 passing | — |
 <!-- sdlc:auto:end matrix -->

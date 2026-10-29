@@ -5,7 +5,15 @@
 <!-- sdlc:auto:start endpoints -->
 | Method | Path | Handler | Source | Summary |
 |---|---|---|---|---|
-| GET | /health | health | `backend/app/main.py:43` | Liveness probe, and the only route here that is not a stub. |
+| POST | /auth/login | login | `backend/app/routers/auth.py:31` | — |
+| POST | /auth/logout | logout | `backend/app/routers/auth.py:72` | — |
+| GET | /auth/me | me | `backend/app/routers/auth.py:85` | — |
+| GET | /departments | list_departments | `backend/app/routers/employees.py:128` | — |
+| GET | /employees | list_employees | `backend/app/routers/employees.py:79` | — |
+| POST | /employees | create_employee | `backend/app/routers/employees.py:85` | — |
+| PATCH | /employees/{employee_id} | update_employee | `backend/app/routers/employees.py:102` | — |
+| GET | /health | health | `backend/app/main.py:65` | Liveness probe, and the only route here that is not a stub. |
+| GET | /job-titles | list_job_titles | `backend/app/routers/employees.py:134` | — |
 <!-- sdlc:auto:end endpoints -->
 
 <!-- sdlc:auto:start drift -->
@@ -15,17 +23,13 @@
 - DELETE /goals/{id}
 - DELETE /review-periods/{id}/participants/{employee_id}
 - GET /audit-events
-- GET /auth/me
 - GET /auth/tokens/{token}
-- GET /departments
-- GET /employees
 - GET /employees/{id}/record
 - GET /feedback
 - GET /feedback/audience
 - GET /goals
 - GET /goals/parent-options
 - GET /goals/{id}
-- GET /job-titles
 - GET /me/dashboard
 - GET /me/profile
 - GET /me/record
@@ -42,11 +46,8 @@
 - PATCH /me/profile
 - PATCH /one-on-ones/{id}
 - POST /action-items/{id}/complete
-- POST /auth/login
-- POST /auth/logout
 - POST /auth/password
 - POST /auth/tokens/{token}/accept
-- POST /employees
 - POST /employees/{id}/deactivate
 - POST /employees/{id}/invitations
 - POST /employees/{id}/password-resets
@@ -71,8 +72,12 @@
 - PUT /one-on-ones/{id}/private-note
 - PUT /one-on-ones/{id}/talking-points/order
 - PUT /self-reviews/{id}/answers
+
+**Code only:**
+
+- PATCH /employees/{employee_id}
 <!-- sdlc:auto:end drift -->
 
 <!-- sdlc:auto:start source -->
-Generated from commit `f2f14b5`
+Generated from commit `66559e2`
 <!-- sdlc:auto:end source -->

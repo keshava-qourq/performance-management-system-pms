@@ -5,7 +5,7 @@
 <!-- sdlc:auto:start overview -->
 Build a Performance management System
 
-**Documentation version:** v4
+**Documentation version:** v5
 <!-- sdlc:auto:end overview -->
 
 ## Contents
@@ -15,7 +15,7 @@ Build a Performance management System
 |---|---|
 | [Requirements](requirements/README.md) | v1 approved |
 | [Architecture](architecture/README.md) | 47 entries |
-| [Development](development/README.md) | 18 entries |
+| [Development](development/README.md) | 24 entries |
 | [Testing](testing/README.md) | 1 entry |
 | [Deployment](deployment/README.md) | 3 entries |
 | [Maintenance](maintenance/README.md) | 1 entry |
@@ -24,14 +24,14 @@ Build a Performance management System
 | [Decisions (ADRs)](architecture/adr/README.md) | 6 decisions |
 | [Sprint plan](development/sprint-plan.md) | 8 sprints |
 | [Developer guide](development/developer-guide.md) | generated |
-| [API reference](development/api-reference.md) | 1 route |
+| [API reference](development/api-reference.md) | 9 routes |
 | [Test report](testing/test-report.md) | not run yet |
 | [Tests](testing/test-cases.md) | 0 tests |
 | [Deployment guide](deployment/deployment-guide.md) | deployed |
 | [Runbook](deployment/runbook.md) | deployed |
-| [Release notes](deployment/release-notes.md) | 1 release |
+| [Release notes](deployment/release-notes.md) | 2 releases |
 | [Traceability matrix](traceability-matrix.md) | 35 requirements |
-| [Changelog](CHANGELOG.md) | 4 versions |
+| [Changelog](CHANGELOG.md) | 5 versions |
 <!-- sdlc:auto:end contents -->
 
 ## Open gaps
@@ -169,22 +169,39 @@ Build a Performance management System
 
 ### Development
 
-- No approver, approval date or plan creation date is recorded.
-- The plan does not explicitly assign items to sprints. Sprint mappings in this documentation are inferred from sprint goal text and need confirmation.
-- No sprint start or end dates are given.
-- User guide not written: the application is not recorded as built (no completed development work in the input), so there is no confirmed usage to document.
-- Development phase has no execution records yet. Need per-story status, links to code changes, and sprint completion outcomes.
-- Assignees are given only as agent roles. No individual owners are recorded.
-- The goal mentions sign-in only. It is unclear whether sign-out (part of US-007) is in scope for this sprint.
-- No sprint status or outcome is recorded.
-- Role-based authorisation (US-010) is planned after roles (Sprint 2) and employee data (Sprint 1) exist. The input does not say how access is restricted before Sprint 3, or whether production data is loaded before then.
-- The sprint is planned at full capacity with no buffer.
-- Review locking and history (US-019) is planned one sprint after self-review completion (US-018, Sprint 6). The input does not say whether self-reviews submitted between those sprints would be locked and audited.
-- Only 4 of 20 capacity points are mapped. The use of the remaining capacity is not stated.
-- US-032 (English-only interface) does not appear in this or any other sprint goal. Its scheduling is unknown.
-- No implementation status is recorded for any story.
-- No implementation status is recorded for any story or task.
-- US-032 is not referenced by any sprint goal, so it may be unscheduled.
+- No plan approval date or approver recorded.
+- Explicit story-to-sprint assignment is not provided; sprint mappings in the sprint entries are inferred from goal wording.
+- Two of the four goal components (EU environment/encryption/backups via US-035; departments/job titles via US-002) were skipped, so the sprint goal is not met per the ticket record.
+- No sprint dates recorded.
+- No ticket records exist for any Sprint 2 story; execution status unknown.
+- No ticket records exist for any Sprint 3 story or task; execution status unknown.
+- No ticket records exist for any Sprint 4 story; execution status unknown.
+- No ticket records exist for any Sprint 5 story or task; execution status unknown.
+- No ticket records exist for any Sprint 6 story or task; execution status unknown.
+- No ticket records exist for any Sprint 7 story; execution status unknown.
+- No ticket records exist for Sprint 8 stories; execution status unknown.
+- US-032 (English-only interface, 1 pt) is not referenced by any sprint goal, yet it was delivered; its planned sprint is unclear.
+- Epic is only partially delivered (1 of 5 stories).
+- Only US-007 delivered; the invitation flow (US-006) and password rules (US-008) are not ticketed, so it is unclear how accounts are created or what password policy the delivered sign-in applies.
+- No stories in this epic have ticket records.
+- No stories or tasks in this epic have ticket records.
+- The data-protection story (US-035) was skipped; see DEV-US-035.
+- Discrepancy: run status is 'completed', but only 5 of 35 stories have ticket records and only 3 were delivered. It is unclear whether the run covered only part of the plan or whether ticket records are missing.
+- No run start/end dates recorded.
+- No reasons recorded for skipped tickets.
+- Departments/job titles (US-002) were skipped; it is unknown how employee records reference a department or job title.
+- HR-only access depends on role assignment (US-004) and authorisation (US-010), neither of which is ticketed; how access to this capability is restricted is unconfirmed.
+- No code review, approval or test evidence recorded.
+- No reason given for skipping.
+- No indication whether it is deferred, descoped or blocked.
+- This is a Sprint 1 goal item that US-001 likely depends on.
+- Account invitation (US-006) and password rules/reset (US-008) are not ticketed; account provisioning and password policy for this sign-in are unconfirmed.
+- Not referenced in any sprint goal; planned sprint unknown.
+- Delivered stories (US-001 employee records, US-007 sign-in) handle personal data without recorded encryption, backup or EU-hosting work. A human should review this data-protection risk.
+- No indication whether it is deferred or descoped.
+- Execution status unknown for all items listed; there is no evidence of delivery, skipping or deferral.
+- Security-critical US-010 (least-privilege authorisation) is not ticketed.
+- No user guide can be documented for most of the application, because only employee records, sign-in and the English-only interface are recorded as built, and no screen definitions were provided.
 
 ### Testing
 
