@@ -24,7 +24,10 @@ describe("formatDate", () => {
     vi.stubGlobal(
       "Intl",
       Object.assign(Intl, {
-        DateTimeFormat: function (locale?: string | string[], options?: Intl.DateTimeFormatOptions) {
+        DateTimeFormat: function (
+          locale?: string | string[],
+          options?: Intl.DateTimeFormatOptions,
+        ) {
           return new original(locale ?? "de-DE", options);
         },
       }),
