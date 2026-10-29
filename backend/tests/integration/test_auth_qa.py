@@ -64,8 +64,12 @@ def test_ac025_logout_signed_out_is_401(client):
 def test_ac026_deactivated_account_refused_without_failed_attempt(client):
     _ = DEV_PASSWORD
     with SessionLocal() as db:
-        db.execute(text("UPDATE employee SET deactivated=true, status='deactivated' "
-                        "WHERE work_email='manager@example.com'"))
+        db.execute(
+            text(
+                "UPDATE employee SET deactivated=true, status='deactivated' "
+                "WHERE work_email='manager@example.com'"
+            )
+        )
         db.commit()
     r = login(client, "manager@example.com")
     assert r.status_code == 401 and r.json() == {"detail": GENERIC}

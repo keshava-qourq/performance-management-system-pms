@@ -1,5 +1,5 @@
 // @ts-nocheck -- generated from the approved design under its JS runtime contract; not hand-written TypeScript.
- 
+
 import React from "react";
 
 import { useNavigate } from "react-router-dom";
@@ -49,7 +49,7 @@ export default function Screen() {
         <p className="mt-3 text-xs uppercase" style={label}>
           {SCREEN}
         </p>
-        {(
+        {
           <form
             className="mt-8 space-y-5"
             onSubmit={(e) => {
@@ -107,7 +107,7 @@ export default function Screen() {
               Sign in
             </button>
           </form>
-        )}
+        }
         <p className="mt-8 text-xs uppercase" style={label}>
           No account?{" "}
           <button

@@ -3,6 +3,7 @@
 Revision ID: 0001
 Revises:
 """
+
 import uuid
 
 import sqlalchemy as sa
@@ -88,6 +89,13 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    for t in ("audit_event", "system_setting", "failed_login_attempt", "session",
-              "employee", "job_title", "department"):
+    for t in (
+        "audit_event",
+        "system_setting",
+        "failed_login_attempt",
+        "session",
+        "employee",
+        "job_title",
+        "department",
+    ):
         op.drop_table(t)
