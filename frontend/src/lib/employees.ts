@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { ApiError, API_BASE_URL, MUTATION_HEADER, MUTATION_HEADER_VALUE, apiFetch } from "@/lib/api";
+import {
+  ApiError,
+  API_BASE_URL,
+  MUTATION_HEADER,
+  MUTATION_HEADER_VALUE,
+  apiFetch,
+} from "@/lib/api";
 
 // GET /employees row. Fields beyond the contract's list are optional.
 export interface Employee {
@@ -64,11 +70,23 @@ async function send<T>(path: string, method: string, body: unknown): Promise<T> 
 export const EMPLOYEES_KEY = ["employees"];
 
 export const useEmployees = () =>
-  useQuery({ queryKey: EMPLOYEES_KEY, retry: false, queryFn: () => apiFetch<Employee[]>("/employees") });
+  useQuery({
+    queryKey: EMPLOYEES_KEY,
+    retry: false,
+    queryFn: () => apiFetch<Employee[]>("/employees"),
+  });
 export const useDepartments = () =>
-  useQuery({ queryKey: ["departments"], retry: false, queryFn: () => apiFetch<Department[]>("/departments") });
+  useQuery({
+    queryKey: ["departments"],
+    retry: false,
+    queryFn: () => apiFetch<Department[]>("/departments"),
+  });
 export const useJobTitles = () =>
-  useQuery({ queryKey: ["job-titles"], retry: false, queryFn: () => apiFetch<JobTitle[]>("/job-titles") });
+  useQuery({
+    queryKey: ["job-titles"],
+    retry: false,
+    queryFn: () => apiFetch<JobTitle[]>("/job-titles"),
+  });
 
 export function useCreateEmployee() {
   const client = useQueryClient();

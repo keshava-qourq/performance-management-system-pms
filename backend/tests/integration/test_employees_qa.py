@@ -39,7 +39,9 @@ def test_ac001_created_employee_listed_with_title_and_department(client):
     assert r.status_code == 201
     rows = client.get("/employees").json()
     row = next(x for x in rows if x["id"] == r.json()["id"])
-    assert row["full_name"] == "Qa Person" and row["job_title"]["name"] and row["department"]["name"]
+    assert (
+        row["full_name"] == "Qa Person" and row["job_title"]["name"] and row["department"]["name"]
+    )
 
 
 def test_ac002_missing_name_message_is_field_level_english(client):

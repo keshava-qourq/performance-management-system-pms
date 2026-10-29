@@ -35,7 +35,9 @@ test("[AC-001] an HR Admin adds an employee who appears in the directory", async
   await expect(page.getByRole("row", { name: new RegExp(name) })).toBeVisible();
 });
 
-test("[AC-002] missing and duplicate values show field-level errors in English", async ({ page }) => {
+test("[AC-002] missing and duplicate values show field-level errors in English", async ({
+  page,
+}) => {
   await signIn(page, "hr.admin@example.com");
   await openDirectory(page);
   await page.getByRole("button", { name: "Add employee" }).click();
@@ -61,9 +63,13 @@ test("[AC-003] an edit shows immediately in the directory", async ({ page }) => 
   await openDirectory(page);
   await page.getByRole("button", { name: "Manage Emi Employee" }).click();
   const title = page.getByLabel("Job title", { exact: true });
-  const options = await title.locator("option").evaluateAll((os) =>
-    os.map((o) => ({ v: (o as HTMLOptionElement).value, t: o.textContent ?? "" })).filter((o) => o.v),
-  );
+  const options = await title
+    .locator("option")
+    .evaluateAll((os) =>
+      os
+        .map((o) => ({ v: (o as HTMLOptionElement).value, t: o.textContent ?? "" }))
+        .filter((o) => o.v),
+    );
   const current = await title.inputValue();
   const next = options.find((o) => o.v !== current) ?? options[0];
   await title.selectOption(next.v);
@@ -78,7 +84,9 @@ test("[AC-004] a non-HR user sees no Add or Manage actions", async ({ page }) =>
   await expect(page.getByRole("button", { name: /^Manage / })).toHaveCount(0);
 });
 
-test("[AC-004] [NFR-001] a direct request by a non-HR user is refused by the server", async ({ page }) => {
+test("[AC-004] [NFR-001] a direct request by a non-HR user is refused by the server", async ({
+  page,
+}) => {
   await signIn(page, "employee@example.com");
   const result = await page.evaluate(async () => {
     const base = (window as unknown as { __API__?: string }).__API__ ?? "http://localhost:8000";
@@ -89,7 +97,12 @@ test("[AC-004] [NFR-001] a direct request by a non-HR user is refused by the ser
       body: JSON.stringify({ full_name: "X", work_email: "x@example.com" }),
     });
     const get = await fetch(`${base}/employees`, { credentials: "include" });
-    return { post: post.status, postBody: await post.text(), get: get.status, getBody: await get.text() };
+    return {
+      post: post.status,
+      postBody: await post.text(),
+      get: get.status,
+      getBody: await get.text(),
+    };
   });
   expect(result.post).toBe(403);
   expect(result.postBody).toBe("");

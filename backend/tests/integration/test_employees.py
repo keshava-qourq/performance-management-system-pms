@@ -60,7 +60,9 @@ def test_ac002_duplicate_email_case_insensitive_and_own_email_ok(client):
     assert r.status_code == 422 and "already used" in r.json()["errors"]["work_email"]
     n = len([x for x in client.get("/employees").json() if x["work_email"] == "new@example.com"])
     assert n == 1
-    ok = client.patch(f"/employees/{first['id']}", json={"work_email": "New@example.com"}, headers=H)
+    ok = client.patch(
+        f"/employees/{first['id']}", json={"work_email": "New@example.com"}, headers=H
+    )
     assert ok.status_code == 200
     r = client.patch(
         f"/employees/{first['id']}", json={"work_email": "employee@example.com"}, headers=H
@@ -110,5 +112,10 @@ def test_ac004_non_hr_403_empty(client, email):
 def test_ac004_signed_out_401(client):
     assert client.get("/employees").status_code == 401
     assert client.post("/employees", json={}, headers=H).status_code == 401
-    assert client.patch(f"/employees/{'0' * 8}-0000-0000-0000-{'0' * 12}", json={}, headers=H).status_code == 401
+    assert (
+        client.patch(
+            f"/employees/{'0' * 8}-0000-0000-0000-{'0' * 12}", json={}, headers=H
+        ).status_code
+        == 401
+    )
     assert client.get("/departments").status_code == 401
