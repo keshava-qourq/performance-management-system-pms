@@ -5,7 +5,7 @@
 <!-- sdlc:auto:start overview -->
 Build a Performance management System
 
-**Documentation version:** v6
+**Documentation version:** v7
 <!-- sdlc:auto:end overview -->
 
 ## Contents
@@ -31,7 +31,7 @@ Build a Performance management System
 | [Runbook](deployment/runbook.md) | deployed |
 | [Release notes](deployment/release-notes.md) | 2 releases |
 | [Traceability matrix](traceability-matrix.md) | 35 requirements |
-| [Changelog](CHANGELOG.md) | 6 versions |
+| [Changelog](CHANGELOG.md) | 7 versions |
 <!-- sdlc:auto:end contents -->
 
 ## Open gaps
@@ -220,27 +220,20 @@ Build a Performance management System
 ### Deployment
 
 - No deployment date or timestamp recorded.
-- No deployer or approver recorded. Status is left as 'draft' because no release approval or sign-off was provided.
-- Target environment not named. 'live' does not confirm whether this is production, staging or a demo environment.
-- No release notes or changelog. It is unknown which requirements (US-001 to US-035) are included, so none are linked in related_ids.
-- No link to testing-phase results or a QA sign-off for this version.
-- No previous version recorded, so it cannot be determined whether an earlier release was superseded.
-- No rollback plan or procedure documented.
-- No post-deployment smoke test or health-check results provided.
-- No monitoring, alerting, logging or incident-response arrangements documented.
-- No database or schema migration information for this release.
-- Unconfirmed: whether 0b3e2f34c2bb maps to a specific source-control commit or build artifact.
-- No custom or branded domain recorded. Users access the app through a platform-generated hostname.
-- Login or authentication entry point and user access provisioning not documented.
-- Supported browsers and devices not documented.
-- Unconfirmed: whether this frontend is configured to call the backend URL in DEP-0b3e2f34c2bb-BE (API base URL and environment configuration not provided).
-- The backend uses an IP-based sslip.io hostname instead of a dedicated domain. If the host IP changes, the URL changes too. Confirm whether this is acceptable for a live release.
-- TLS certificate source and renewal arrangement not documented.
-- Unconfirmed: whether the host is shared with other applications, and what isolation is in place.
-- No API documentation, health-check endpoint or version endpoint provided.
-- CORS configuration allowing the frontend origin not documented.
-- Backend runtime, data store, backups and scaling configuration not documented.
-- Secrets and credentials management for this deployment not documented.
+- No deployer or approver recorded. A formal release approval cannot be confirmed, so this entry stays 'draft'.
+- The input does not say whether this is a production, staging or demo environment.
+- Release scope is unknown. The input does not say which of US-001 through US-035 are included, so requirement traceability for this deployment cannot be established.
+- The version identifier looks like a commit hash, but no build artifact, branch, or development/test phase output is referenced to confirm what code it contains.
+- No pre- or post-deployment verification (smoke tests, health checks, test sign-off) recorded.
+- No rollback plan or previous version recorded.
+- No release notes, known issues, or post-deployment monitoring/alerting details provided.
+- No custom domain recorded. The app is reachable only on the default Amplify-generated hostname.
+- The input does not confirm that the frontend is configured to call the recorded backend URL.
+- No frontend build or branch information recorded.
+- The backend is addressed by a raw-IP-derived sslip.io hostname rather than a stable domain. The input does not say whether this is intended for production use. Needs human confirmation.
+- No health-check, monitoring or alerting details recorded.
+- No database, data migration or backup details recorded for this deployment.
+- No security or access-control configuration recorded for the backend endpoint.
 
 ### Maintenance
 
