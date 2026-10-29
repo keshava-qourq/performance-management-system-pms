@@ -8,28 +8,34 @@ import {
   apiFetch,
 } from "@/lib/api";
 
-// GET /employees row. Fields beyond the contract's list are optional.
+// A named thing the API returns by reference: {id, name} or {id, full_name}.
+export interface Ref {
+  id: string;
+  name: string;
+}
+export interface PersonRef {
+  id: string;
+  full_name: string;
+}
+
+// GET /employees row, exactly as the API returns it.
 export interface Employee {
   id: string;
   full_name: string;
-  work_email?: string;
-  job_title: string | null;
-  department: string | null;
-  job_title_id?: string;
-  department_id?: string;
-  manager: string | null;
-  status: string;
-  account_status: string;
+  work_email: string | null;
+  job_title: Ref | null;
+  department: Ref | null;
+  manager: PersonRef | null;
   missing_manager: boolean;
+  role: string;
+  status: string;
 }
-export interface Department {
-  id: string;
-  name: string;
+export interface EmployeeRecord {
+  employee: Employee;
+  direct_reports: PersonRef[];
 }
-export interface JobTitle {
-  id: string;
-  name: string;
-}
+export type Department = Ref;
+export type JobTitle = Ref;
 export interface EmployeeInput {
   full_name?: string;
   work_email?: string;
@@ -68,6 +74,7 @@ async function send<T>(path: string, method: string, body: unknown): Promise<T> 
 }
 
 export const EMPLOYEES_KEY = ["employees"];
+export const RECORD_KEY = ["employee-record"];
 
 export const useEmployees = () =>
   useQuery({
@@ -88,40 +95,47 @@ export const useJobTitles = () =>
     queryFn: () => apiFetch<JobTitle[]>("/job-titles"),
   });
 
-export function useCreateEmployee() {
+// The employee's own record, including who reports to them.
+export const useEmployeeRecord = (id: string | null) =>
+  useQuery({
+    queryKey: [...RECORD_KEY, id],
+    retry: false,
+    enabled: Boolean(id),
+    queryFn: () => apiFetch<EmployeeRecord>(`/employees/${encodeURIComponent(id!)}/record`),
+  });
+
+function useRefetchAll() {
   const client = useQueryClient();
+  return () =>
+    Promise.all([
+      client.invalidateQueries({ queryKey: EMPLOYEES_KEY }),
+      client.invalidateQueries({ queryKey: RECORD_KEY }),
+    ]);
+}
+
+export function useCreateEmployee() {
+  const refetch = useRefetchAll();
   return useMutation({
     mutationFn: (input: EmployeeInput) => send<Employee>("/employees", "POST", input),
-    onSuccess: () => client.invalidateQueries({ queryKey: EMPLOYEES_KEY }),
+    onSuccess: refetch,
   });
 }
 
-// Updates the cached row straight away, then refetches.
-export function useUpdateEmployee(departments: Department[], titles: JobTitle[]) {
-  const client = useQueryClient();
+export function useUpdateEmployee() {
+  const refetch = useRefetchAll();
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: EmployeeInput }) =>
       send<unknown>(`/employees/${encodeURIComponent(id)}`, "PATCH", input),
-    onSuccess: (_data, { id, input }) => {
-      client.setQueryData<Employee[]>(EMPLOYEES_KEY, (rows) =>
-        rows?.map((row) => {
-          if (row.id !== id) return row;
-          const next: Employee = { ...row };
-          if (input.full_name) next.full_name = input.full_name;
-          if (input.work_email) next.work_email = input.work_email;
-          if (input.job_title_id) {
-            next.job_title_id = input.job_title_id;
-            next.job_title = titles.find((t) => t.id === input.job_title_id)?.name ?? row.job_title;
-          }
-          if (input.department_id) {
-            next.department_id = input.department_id;
-            next.department =
-              departments.find((d) => d.id === input.department_id)?.name ?? row.department;
-          }
-          return next;
-        }),
-      );
-      return client.invalidateQueries({ queryKey: EMPLOYEES_KEY });
-    },
+    onSuccess: refetch,
+  });
+}
+
+// PUT /employees/{id}/manager. `manager_id: null` clears the reporting line.
+export function useSetManager() {
+  const refetch = useRefetchAll();
+  return useMutation({
+    mutationFn: ({ id, manager_id }: { id: string; manager_id: string | null }) =>
+      send<unknown>(`/employees/${encodeURIComponent(id)}/manager`, "PUT", { manager_id }),
+    onSuccess: refetch,
   });
 }

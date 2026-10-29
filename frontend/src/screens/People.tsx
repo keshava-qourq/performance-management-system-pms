@@ -4,6 +4,7 @@ import React from "react";
 import * as UI from "@/lib/ui";
 import { Icons } from "@/lib/icons";
 import { brand } from "@/lib/brand";
+import { useDepartments, useEmployees, useJobTitles } from "@/lib/employees";
 import { useNavigate } from "@/lib/navigate";
 import { useSession } from "@/lib/session";
 import DirectoryTab from "@/screens/PeopleDirectory";
@@ -11,134 +12,6 @@ import DirectoryTab from "@/screens/PeopleDirectory";
 const SURF = "#1d2b25";
 const LINE = "rgba(255,255,255,0.1)";
 const FOCUS = "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8fae8b]";
-const DEPTS0 = [
-  { id: "d1", name: "Engineering" },
-  { id: "d2", name: "Design" },
-  { id: "d3", name: "Sales" },
-  { id: "d4", name: "People & Culture" },
-  { id: "d5", name: "Executive Office" },
-];
-const TITLES0 = [
-  { id: "t1", name: "HR Director" },
-  { id: "t2", name: "Engineering Manager" },
-  { id: "t3", name: "Senior Software Engineer" },
-  { id: "t4", name: "Software Engineer" },
-  { id: "t5", name: "Product Designer" },
-  { id: "t6", name: "Head of Design" },
-  { id: "t7", name: "Revenue Operations Analyst" },
-  { id: "t8", name: "Chief Operating Officer" },
-  { id: "t9", name: "Customer Success Manager" },
-];
-const EMPS0 = [
-  {
-    id: "e1",
-    full_name: "Amara Okafor",
-    work_email: "amara.okafor@halden.co",
-    job_title_id: "t1",
-    department_id: "d4",
-    manager_id: "e7",
-    role: "HR Admin",
-    status: "Active",
-    leaving_date: "",
-    account_status: "Active",
-  },
-  {
-    id: "e2",
-    full_name: "Daniel Reyes",
-    work_email: "daniel.reyes@halden.co",
-    job_title_id: "t2",
-    department_id: "d1",
-    manager_id: "e7",
-    role: "Manager",
-    status: "Active",
-    leaving_date: "",
-    account_status: "Active",
-  },
-  {
-    id: "e3",
-    full_name: "Priya Nair",
-    work_email: "priya.nair@halden.co",
-    job_title_id: "t3",
-    department_id: "d1",
-    manager_id: "e2",
-    role: "Employee",
-    status: "Active",
-    leaving_date: "",
-    account_status: "Active",
-  },
-  {
-    id: "e4",
-    full_name: "Marcus Webb",
-    work_email: "marcus.webb@halden.co",
-    job_title_id: "t5",
-    department_id: "d2",
-    manager_id: "e5",
-    role: "Employee",
-    status: "Active",
-    leaving_date: "",
-    account_status: "Active",
-  },
-  {
-    id: "e5",
-    full_name: "Sofia Lindqvist",
-    work_email: "sofia.lindqvist@halden.co",
-    job_title_id: "t6",
-    department_id: "d2",
-    manager_id: "e7",
-    role: "Manager",
-    status: "Active",
-    leaving_date: "",
-    account_status: "Active",
-  },
-  {
-    id: "e6",
-    full_name: "Jonas Albrecht",
-    work_email: "jonas.albrecht@halden.co",
-    job_title_id: "t7",
-    department_id: "d3",
-    manager_id: "e7",
-    role: "Employee",
-    status: "Active",
-    leaving_date: "",
-    account_status: "Invited",
-  },
-  {
-    id: "e7",
-    full_name: "Helena Voss",
-    work_email: "helena.voss@halden.co",
-    job_title_id: "t8",
-    department_id: "d5",
-    manager_id: "",
-    role: "Executive",
-    status: "Active",
-    leaving_date: "",
-    account_status: "Active",
-  },
-  {
-    id: "e8",
-    full_name: "Tomas Lindgren",
-    work_email: "tomas.lindgren@halden.co",
-    job_title_id: "t4",
-    department_id: "d1",
-    manager_id: "",
-    role: "Employee",
-    status: "Active",
-    leaving_date: "",
-    account_status: "No account",
-  },
-  {
-    id: "e9",
-    full_name: "Ingrid Solheim",
-    work_email: "ingrid.solheim@halden.co",
-    job_title_id: "t9",
-    department_id: "d3",
-    manager_id: "e7",
-    role: "Employee",
-    status: "Deactivated",
-    leaving_date: "2026-09-30",
-    account_status: "Deactivated",
-  },
-];
 export default function Screen() {
   const navigate = useNavigate();
   const { Button, Input, Switch, Tabs } = UI;
@@ -149,8 +22,21 @@ export default function Screen() {
     { hr_admin: "HR Admin", manager: "Manager", executive: "Executive" }[sessionRole || ""] ||
     "Employee";
   const [tab, setTab] = React.useState("directory");
-  const [depts, setDepts] = React.useState(DEPTS0);
-  const [titles, setTitles] = React.useState(TITLES0);
+  // Departments, titles and headcounts all come from the API; adds and renames
+  // made here are held locally until their own endpoints exist.
+  const employees = useEmployees().data || [];
+  const [addedDepts, setAddedDepts] = React.useState([]);
+  const [renames, setRenames] = React.useState({});
+  const [removedDepts, setRemovedDepts] = React.useState([]);
+  const [addedTitles, setAddedTitles] = React.useState([]);
+  const depts = (useDepartments().data || [])
+    .concat(addedDepts)
+    .filter((d) => !removedDepts.includes(d.id));
+  const titles = (useJobTitles().data || [])
+    .concat(addedTitles)
+    .map((t) => (renames[t.id] ? { ...t, name: renames[t.id] } : t));
+  const activeIn = (key, id) =>
+    employees.filter((e) => (e[key] || {}).id === id && e.status !== "Deactivated").length;
   const [mgrSeesFeedback, setMgrSeesFeedback] = React.useState(false);
   const [settingSaved, setSettingSaved] = React.useState("");
   const [newDept, setNewDept] = React.useState("");
@@ -186,7 +72,7 @@ export default function Screen() {
       });
       return;
     }
-    setDepts([...depts, { id: "d" + (depts.length + 10), name: n }]);
+    setAddedDepts([...addedDepts, { id: "d" + (depts.length + 10), name: n }]);
     setNewDept("");
     setDeptMsg({
       kind: "ok",
@@ -194,7 +80,7 @@ export default function Screen() {
     });
   };
   const delDept = (d) => {
-    const c = EMPS0.filter((e) => e.department_id === d.id && e.status === "Active").length;
+    const c = activeIn("department", d.id);
     if (c > 0) {
       setDeptMsg({
         kind: "err",
@@ -209,7 +95,7 @@ export default function Screen() {
       });
       return;
     }
-    setDepts(depts.filter((x) => x.id !== d.id));
+    setRemovedDepts([...removedDepts, d.id]);
     setDeptMsg({ kind: "ok", text: d.name + " was deleted." });
   };
   const addTitle = (ev) => {
@@ -222,14 +108,14 @@ export default function Screen() {
       });
       return;
     }
-    setTitles([...titles, { id: "t" + (titles.length + 10), name: n }]);
+    setAddedTitles([...addedTitles, { id: "t" + (titles.length + 10), name: n }]);
     setNewTitle("");
     setDeptMsg({ kind: "ok", text: "Job title “" + n + "” was added." });
   };
   const saveRename = (t) => {
     const n = renameVal.trim();
     if (!n) return;
-    setTitles(titles.map((x) => (x.id === t.id ? { ...x, name: n } : x)));
+    setRenames({ ...renames, [t.id]: n });
     setRenaming(null);
     setDeptMsg({
       kind: "ok",
@@ -269,9 +155,7 @@ export default function Screen() {
           </div>
           <ul className="mt-3">
             {depts.map((d) => {
-              const c = EMPS0.filter(
-                (e) => e.department_id === d.id && e.status === "Active",
-              ).length;
+              const c = activeIn("department", d.id);
               return (
                 <li
                   key={d.id}
@@ -322,7 +206,7 @@ export default function Screen() {
           </div>
           <ul className="mt-3">
             {titles.map((t) => {
-              const c = EMPS0.filter((e) => e.job_title_id === t.id).length;
+              const c = employees.filter((e) => (e.job_title || {}).id === t.id).length;
               return (
                 <li
                   key={t.id}

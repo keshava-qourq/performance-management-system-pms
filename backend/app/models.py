@@ -37,7 +37,7 @@ class Employee(Base):
     work_email: Mapped[str] = mapped_column(String(320), unique=True)  # stored lower-case
     job_title_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("job_title.id"))
     department_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("department.id"))
-    manager_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("employee.id"))
+    manager_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("employee.id"), index=True)
     role: Mapped[str] = mapped_column(String(20))  # employee|manager|hr_admin|executive
     status: Mapped[str] = mapped_column(String(20), default="active")  # active|deactivated
     deactivated: Mapped[bool] = mapped_column(Boolean, default=False)
