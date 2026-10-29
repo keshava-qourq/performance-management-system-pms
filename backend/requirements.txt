@@ -3,6 +3,9 @@ uvicorn[standard]==0.32.0
 sqlalchemy==2.0.35
 pydantic==2.9.2
 psycopg[binary]==3.2.3
+# Schema changes go through migrations, never through create_all at startup
+# (see backend/alembic/ and app/main.py).
+alembic==1.13.3
 
 # Checks. The platform installs and runs this file before it reports that the
 # generated tests pass, so the test dependencies belong here rather than in a
@@ -15,5 +18,10 @@ pytest-cov>=5.0
 ruff>=0.6
 
 # BEGIN QUORQ ARCHITECTURE PACKAGES
-redis>=5.0
+argon2-cffi>=23.1.0
+boto3
+email-validator>=2.0
+Pillow>=10.0
+python-multipart
+rq
 # END QUORQ ARCHITECTURE PACKAGES

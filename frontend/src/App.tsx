@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { NavLink, Navigate, Outlet, Route, Routes } from "react-router-dom";
 
+import { useLogout, useSession, useSessionExpiry } from "@/lib/session";
 import SignIn from "@/screens/SignIn";
 import MyPerformance from "@/screens/MyPerformance";
 import Goals from "@/screens/Goals";
@@ -16,6 +18,16 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 // The screens behind sign-in render inside the side menu. Login and the other
 // screens shown before sign-in render on their own, with no menu around them.
 function Shell() {
+  const { user, isLoading } = useSession();
+  const logout = useLogout();
+  useSessionExpiry();
+  if (isLoading)
+    return (
+      <p role="status" className="p-6">
+        {"Loading…"}
+      </p>
+    );
+  if (!user) return <Navigate to="/sign-in" replace />;
   return (
     <div className="flex min-h-screen">
       <aside
@@ -48,6 +60,14 @@ function Shell() {
             {"People"}
           </NavLink>
         </nav>
+        <button
+          type="button"
+          onClick={() => logout.mutate()}
+          className="mt-6 block w-full rounded-[var(--brand-radius)] px-3 py-2 text-left text-sm font-medium"
+          style={{ color: "var(--brand-fg-muted)" }}
+        >
+          {"Sign out"}
+        </button>
       </aside>
       <main className="flex-1 overflow-auto">
         <Outlet />
@@ -57,6 +77,11 @@ function Shell() {
 }
 
 export default function App() {
+  // English-only interface (NFR-018): set regardless of the browser's
+  // preferred language -- no language-selection control exists anywhere.
+  useEffect(() => {
+    document.documentElement.lang = "en";
+  }, []);
   return (
     <Routes>
       <Route path="/sign-in" element={<SignIn />} />

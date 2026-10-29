@@ -1,0 +1,75 @@
+{
+  "key": {
+    "app_design_id": "dd18b1de-dccc-43a9-88c4-7dbd96aa587c",
+    "app_design_version": 1,
+    "architecture_document_id": "59ccbb1e-57fa-4a89-ae89-7873c5988e52",
+    "architecture_version": 1
+  },
+  "outcome": "prepared",
+  "packages": [
+    {
+      "ecosystem": "pypi",
+      "installed_version": "25.1.0",
+      "name": "argon2-cffi",
+      "status": "installed",
+      "version": ">=23.1.0"
+    },
+    {
+      "ecosystem": "pypi",
+      "installed_version": "2.3.0",
+      "name": "email-validator",
+      "status": "installed",
+      "version": ">=2.0"
+    },
+    {
+      "ecosystem": "pypi",
+      "installed_version": "0.0.32",
+      "name": "python-multipart",
+      "status": "installed",
+      "version": ""
+    },
+    {
+      "ecosystem": "pypi",
+      "installed_version": "1.43.121",
+      "name": "boto3",
+      "status": "installed",
+      "version": ""
+    },
+    {
+      "ecosystem": "pypi",
+      "installed_version": "13.0.0",
+      "name": "Pillow",
+      "status": "installed",
+      "version": ">=10.0"
+    },
+    {
+      "ecosystem": "pypi",
+      "installed_version": "3.0.0",
+      "name": "rq",
+      "status": "installed",
+      "version": ""
+    },
+    {
+      "ecosystem": "npm",
+      "error": "already provided by the scaffold",
+      "name": "@tanstack/react-query",
+      "status": "skipped",
+      "version": ">=5.0"
+    },
+    {
+      "ecosystem": "npm",
+      "error": "already provided by the scaffold",
+      "name": "react-hook-form",
+      "status": "skipped",
+      "version": ">=7.0"
+    },
+    {
+      "ecosystem": "npm",
+      "error": "already provided by the scaffold",
+      "name": "@dnd-kit/sortable",
+      "status": "skipped",
+      "version": ""
+    }
+  ],
+  "prepared_by_run": "231fac29-77f1-49ba-9491-d2d6bf118702"
+}
