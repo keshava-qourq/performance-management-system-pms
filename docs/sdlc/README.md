@@ -5,7 +5,7 @@
 <!-- sdlc:auto:start overview -->
 Build a Performance management System
 
-**Documentation version:** v3
+**Documentation version:** v4
 <!-- sdlc:auto:end overview -->
 
 ## Contents
@@ -17,7 +17,7 @@ Build a Performance management System
 | [Architecture](architecture/README.md) | 47 entries |
 | [Development](development/README.md) | 18 entries |
 | [Testing](testing/README.md) | 1 entry |
-| [Deployment](deployment/README.md) | 1 entry |
+| [Deployment](deployment/README.md) | 3 entries |
 | [Maintenance](maintenance/README.md) | 1 entry |
 | [Data model](architecture/data-model.md) | generated |
 | [API (OpenAPI)](architecture/api/openapi.yaml) | generated |
@@ -27,11 +27,11 @@ Build a Performance management System
 | [API reference](development/api-reference.md) | 1 route |
 | [Test report](testing/test-report.md) | not run yet |
 | [Tests](testing/test-cases.md) | 0 tests |
-| [Deployment guide](deployment/deployment-guide.md) | not deployed yet |
-| [Runbook](deployment/runbook.md) | not deployed yet |
-| [Release notes](deployment/release-notes.md) | 0 releases |
+| [Deployment guide](deployment/deployment-guide.md) | deployed |
+| [Runbook](deployment/runbook.md) | deployed |
+| [Release notes](deployment/release-notes.md) | 1 release |
 | [Traceability matrix](traceability-matrix.md) | 35 requirements |
-| [Changelog](CHANGELOG.md) | 3 versions |
+| [Changelog](CHANGELOG.md) | 4 versions |
 <!-- sdlc:auto:end contents -->
 
 ## Open gaps
@@ -192,7 +192,28 @@ Build a Performance management System
 
 ### Deployment
 
-- No deployment recorded yet: EU region, encryption at rest and daily backup configuration are all unverified.
+- No deployment date or timestamp recorded.
+- No deployer or approver recorded. Status is left as 'draft' because no release approval or sign-off was provided.
+- Target environment not named. 'live' does not confirm whether this is production, staging or a demo environment.
+- No release notes or changelog. It is unknown which requirements (US-001 to US-035) are included, so none are linked in related_ids.
+- No link to testing-phase results or a QA sign-off for this version.
+- No previous version recorded, so it cannot be determined whether an earlier release was superseded.
+- No rollback plan or procedure documented.
+- No post-deployment smoke test or health-check results provided.
+- No monitoring, alerting, logging or incident-response arrangements documented.
+- No database or schema migration information for this release.
+- Unconfirmed: whether 0b3e2f34c2bb maps to a specific source-control commit or build artifact.
+- No custom or branded domain recorded. Users access the app through a platform-generated hostname.
+- Login or authentication entry point and user access provisioning not documented.
+- Supported browsers and devices not documented.
+- Unconfirmed: whether this frontend is configured to call the backend URL in DEP-0b3e2f34c2bb-BE (API base URL and environment configuration not provided).
+- The backend uses an IP-based sslip.io hostname instead of a dedicated domain. If the host IP changes, the URL changes too. Confirm whether this is acceptable for a live release.
+- TLS certificate source and renewal arrangement not documented.
+- Unconfirmed: whether the host is shared with other applications, and what isolation is in place.
+- No API documentation, health-check endpoint or version endpoint provided.
+- CORS configuration allowing the frontend origin not documented.
+- Backend runtime, data store, backups and scaling configuration not documented.
+- Secrets and credentials management for this deployment not documented.
 
 ### Maintenance
 
