@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 from app import auth
 from app.config import ALLOWED_ORIGINS
 from app.routers import auth as auth_router
+from app.routers import employees as employees_router
 from app.services import configured_services
 
 app = FastAPI(
@@ -25,6 +26,7 @@ app = FastAPI(
 app.add_exception_handler(auth.PolicyRefusal, auth.refusal_response)
 app.add_exception_handler(auth.Unauthenticated, auth.unauthenticated_response)
 app.include_router(auth_router.router)
+app.include_router(employees_router.router)
 
 
 @app.exception_handler(RequestValidationError)
@@ -41,6 +43,7 @@ async def validation_errors(_request: Request, exc: RequestValidationError) -> J
             msg = "Enter a valid value."
         errors.setdefault(field, msg)
     return JSONResponse(status_code=422, content={"errors": errors})
+
 
 # The SPA runs on a different origin than the API, so the browser refuses its calls
 # unless that origin is allowed here. In development that is the Vite dev server; when
