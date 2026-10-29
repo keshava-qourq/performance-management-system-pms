@@ -5,7 +5,7 @@
 <!-- sdlc:auto:start overview -->
 Build a Performance management System
 
-**Documentation version:** v2
+**Documentation version:** v3
 <!-- sdlc:auto:end overview -->
 
 ## Contents
@@ -15,7 +15,7 @@ Build a Performance management System
 |---|---|
 | [Requirements](requirements/README.md) | v1 approved |
 | [Architecture](architecture/README.md) | 47 entries |
-| [Development](development/README.md) | 1 entry |
+| [Development](development/README.md) | 18 entries |
 | [Testing](testing/README.md) | 1 entry |
 | [Deployment](deployment/README.md) | 1 entry |
 | [Maintenance](maintenance/README.md) | 1 entry |
@@ -31,7 +31,7 @@ Build a Performance management System
 | [Runbook](deployment/runbook.md) | not deployed yet |
 | [Release notes](deployment/release-notes.md) | 0 releases |
 | [Traceability matrix](traceability-matrix.md) | 35 requirements |
-| [Changelog](CHANGELOG.md) | 2 versions |
+| [Changelog](CHANGELOG.md) | 3 versions |
 <!-- sdlc:auto:end contents -->
 
 ## Open gaps
@@ -169,7 +169,22 @@ Build a Performance management System
 
 ### Development
 
-- Development phase has not started: no plans, sprints, tickets or code changes recorded.
+- No approver, approval date or plan creation date is recorded.
+- The plan does not explicitly assign items to sprints. Sprint mappings in this documentation are inferred from sprint goal text and need confirmation.
+- No sprint start or end dates are given.
+- User guide not written: the application is not recorded as built (no completed development work in the input), so there is no confirmed usage to document.
+- Development phase has no execution records yet. Need per-story status, links to code changes, and sprint completion outcomes.
+- Assignees are given only as agent roles. No individual owners are recorded.
+- The goal mentions sign-in only. It is unclear whether sign-out (part of US-007) is in scope for this sprint.
+- No sprint status or outcome is recorded.
+- Role-based authorisation (US-010) is planned after roles (Sprint 2) and employee data (Sprint 1) exist. The input does not say how access is restricted before Sprint 3, or whether production data is loaded before then.
+- The sprint is planned at full capacity with no buffer.
+- Review locking and history (US-019) is planned one sprint after self-review completion (US-018, Sprint 6). The input does not say whether self-reviews submitted between those sprints would be locked and audited.
+- Only 4 of 20 capacity points are mapped. The use of the remaining capacity is not stated.
+- US-032 (English-only interface) does not appear in this or any other sprint goal. Its scheduling is unknown.
+- No implementation status is recorded for any story.
+- No implementation status is recorded for any story or task.
+- US-032 is not referenced by any sprint goal, so it may be unscheduled.
 
 ### Testing
 
