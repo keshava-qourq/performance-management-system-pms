@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const [REDACTED_SECRET]";
+const PASSWORD = "Dev-Passw0rd!";
 const HR = "hr.admin@example.com";
 const EMPLOYEE = "employee@example.com";
 const OFF = "Feedback is readable only by its author, its recipient and HR Admins.";
