@@ -5,7 +5,7 @@
 <!-- sdlc:auto:start overview -->
 Build a Performance management System
 
-**Documentation version:** v8
+**Documentation version:** v9
 <!-- sdlc:auto:end overview -->
 
 ## Contents
@@ -31,7 +31,7 @@ Build a Performance management System
 | [Runbook](deployment/runbook.md) | deployed |
 | [Release notes](deployment/release-notes.md) | 4 releases |
 | [Traceability matrix](traceability-matrix.md) | 35 requirements |
-| [Changelog](CHANGELOG.md) | 8 versions |
+| [Changelog](CHANGELOG.md) | 9 versions |
 <!-- sdlc:auto:end contents -->
 
 ## Open gaps
@@ -218,20 +218,20 @@ Build a Performance management System
 ### Deployment
 
 - No deployment date or timestamp recorded.
-- No deployer or approver recorded. A formal release approval cannot be confirmed, so this entry stays 'draft'.
-- The input does not say whether this is a production, staging or demo environment.
-- Release scope is unknown. The input does not say which of US-001 through US-035 are included, so requirement traceability for this deployment cannot be established.
-- The version identifier looks like a commit hash, but no build artifact, branch, or development/test phase output is referenced to confirm what code it contains.
-- No pre- or post-deployment verification (smoke tests, health checks, test sign-off) recorded.
+- No record of who performed or approved the deployment.
+- No release approval or go/no-go decision recorded.
+- Target environment is not named (production, staging, or demo); 'live' is the only status given.
+- No release notes or changelog stating which requirements (US-001 to US-035) or tickets this version includes, so it cannot be traced to requirements.
+- No pre- or post-deployment verification recorded (smoke tests, health checks, test sign-off).
 - No rollback plan or previous version recorded.
-- No release notes, known issues, or post-deployment monitoring/alerting details provided.
-- No custom domain recorded. The app is reachable only on the default Amplify-generated hostname.
-- The input does not confirm that the frontend is configured to call the recorded backend URL.
-- No frontend build or branch information recorded.
-- The backend is addressed by a raw-IP-derived sslip.io hostname rather than a stable domain. The input does not say whether this is intended for production use. Needs human confirmation.
-- No health-check, monitoring or alerting details recorded.
-- No database, data migration or backup details recorded for this deployment.
-- No security or access-control configuration recorded for the backend endpoint.
+- Version 498f20bea4d5 is not linked to a specific source commit, branch, or build pipeline run in the input.
+- No custom or branded domain recorded; the app is on the default Amplify subdomain.
+- No confirmation that the frontend is configured to call the recorded backend URL.
+- No record of frontend availability or health verification after deployment.
+- The backend is addressed through an IP-encoded wildcard DNS hostname (sslip.io) rather than a dedicated domain. Whether this is acceptable for the stated environment is not documented and needs human review.
+- No backend health-check, API smoke-test, or monitoring results recorded.
+- No database, data migration, or configuration/secrets deployment steps recorded.
+- Hosting platform, scaling, and backup arrangements are not documented.
 
 ### Maintenance
 
