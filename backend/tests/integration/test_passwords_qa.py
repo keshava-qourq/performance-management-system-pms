@@ -325,9 +325,9 @@ def test_nfr020_password_rules_come_from_system_settings(client):
         _set_setting(key, 20)
         login(client, EMPLOYEE, candidate)
         r = _change(client, candidate, "Ab3!xyzqrs")  # ten characters, now too short
-        assert (
-            r.status_code == 422
-        ), "NFR-020: raising the minimum length in SystemSettings did not change enforcement"
+        assert r.status_code == 422, (
+            "NFR-020: raising the minimum length in SystemSettings did not change enforcement"
+        )
         assert _messages(r)
     finally:
         _set_setting(key, original)

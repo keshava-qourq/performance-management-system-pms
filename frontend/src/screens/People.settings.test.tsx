@@ -10,7 +10,8 @@ type Reply = { status: number; body?: unknown };
 type Handler = Reply | (() => Reply);
 
 const OFF = "Feedback is readable only by its author, its recipient and HR Admins.";
-const ON = "Feedback is readable by its author, its recipient, HR Admins and the recipient's manager.";
+const ON =
+  "Feedback is readable by its author, its recipient, HR Admins and the recipient's manager.";
 
 function settings(visible: boolean) {
   return { manager_feedback_visible: visible, hr_private_notes_visible: false };
@@ -20,7 +21,10 @@ function mockApi(role: string, routes: Record<string, Handler>) {
   const fn = vi.fn(async (url: string, init?: RequestInit) => {
     const key = `${init?.method ?? "GET"} ${new URL(url).pathname}`;
     const base: Record<string, Handler> = {
-      "GET /auth/me": { status: 200, body: { id: "h1", full_name: "Hana", role, is_manager: false } },
+      "GET /auth/me": {
+        status: 200,
+        body: { id: "h1", full_name: "Hana", role, is_manager: false },
+      },
       "GET /employees": { status: 200, body: [] },
       "GET /departments": { status: 200, body: [] },
       "GET /job-titles": { status: 200, body: [] },
@@ -119,7 +123,9 @@ describe("People settings", () => {
         "Saved. Managers can no longer see feedback addressed to their direct reports.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText(/managers do not see feedback on a direct report/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/managers do not see feedback on a direct report/i),
+    ).toBeInTheDocument();
   });
 
   it("[AC-090] a failed save returns the switch to the stored value and shows an error", async () => {

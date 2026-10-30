@@ -164,9 +164,9 @@ def test_ac019_accepting_activates_the_account_and_issues_a_session(client):
 
     invitee, r = _accept(_token_of(link))
     assert r.status_code in (200, 204), r.text
-    assert "session=" in r.headers.get(
-        "set-cookie", ""
-    ), "AC-019: accepting the invitation issued no session cookie"
+    assert "session=" in r.headers.get("set-cookie", ""), (
+        "AC-019: accepting the invitation issued no session cookie"
+    )
     me = invitee.get("/auth/me")
     assert me.status_code == 200
     assert me.json()["id"] == person["id"]
