@@ -338,3 +338,193 @@ describe("Goals", () => {
     await waitFor(() => expect(screen.getByLabelText("Progress (%)")).toBeDisabled());
   });
 });
+
+const HR = { id: "h1", full_name: "Hana Reyes", role: "HR Admin", is_manager: false };
+const OPTIONS = [
+  { id: "c1", title: "Grow revenue", level: "company" },
+  { id: "d1", title: "Ship faster", level: "department" },
+];
+
+async function openGoal(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByText("Ship onboarding v2"));
+}
+const detailBody = (g: unknown, children: unknown[] = []) => ({
+  status: 200,
+  body: { goal: g, children, history: [] },
+});
+
+describe("Goals alignment", () => {
+  it("[AC-048] [AC-053] parent select lists the API's options with level and shows parent_title", async () => {
+    const aligned = goal({ parent_goal_id: "c1", parent_title: "Grow revenue" });
+    const fn = mockApi({
+      "GET /auth/me": { status: 200, body: ME },
+      "GET /goals": { status: 200, body: listBody([aligned]) },
+      "GET /goals/parent-options": { status: 200, body: OPTIONS },
+      "GET /goals/g1": detailBody(aligned),
+      "PATCH /goals/g1": { status: 200, body: aligned },
+    });
+    renderScreen();
+    const user = userEvent.setup();
+    const list = await screen.findByRole("region", { name: "My goals" });
+    expect(await within(list).findByText("Aligned to: Grow revenue")).toBeInTheDocument();
+    await openGoal(user);
+    const detail = screen.getByRole("region", { name: "Goal detail" });
+    expect(await within(detail).findByText("Aligned to: Grow revenue")).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Edit goal" }));
+    const select = await screen.findByLabelText("Aligned to");
+    await waitFor(() => expect(within(select).getAllByRole("option")).toHaveLength(3));
+    expect(screen.getByRole("option", { name: "Ship faster (department)" })).toBeInTheDocument();
+    await user.selectOptions(select, "d1");
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() =>
+      expect(bodyOf(fn, "/goals/g1", "PATCH")).toMatchObject({ parent_goal_id: "d1" }),
+    );
+  });
+
+  it("[AC-049] lists aligned children with owner, progress and status", async () => {
+    const child = goal({ id: "g3", title: "Child", owner: OTHER, progress: 20, status: "At risk" });
+    mockApi({
+      "GET /auth/me": { status: 200, body: ME },
+      "GET /goals": { status: 200, body: listBody([goal()]) },
+      "GET /goals/g1": detailBody(goal(), [child]),
+    });
+    renderScreen();
+    const user = userEvent.setup();
+    await openGoal(user);
+    const head = await screen.findByRole("heading", { name: "Aligned goals" });
+    const li = await within(head.parentElement!).findByRole("listitem");
+    expect(li).toHaveTextContent("Priya Raman");
+    expect(li).toHaveTextContent("20%");
+    expect(li).toHaveTextContent("At risk");
+  });
+
+  it("[AC-049] shows an explanation, not an error, with no aligned goals", async () => {
+    mockApi({
+      "GET /auth/me": { status: 200, body: ME },
+      "GET /goals": { status: 200, body: listBody([goal()]) },
+      "GET /goals/g1": detailBody(goal()),
+    });
+    renderScreen();
+    const user = userEvent.setup();
+    await openGoal(user);
+    expect(await screen.findByText(/No goals are aligned to this one yet/)).toBeInTheDocument();
+  });
+
+  it("[NFR-019] an empty options list offers 'Not aligned' and a hint", async () => {
+    mockApi({
+      "GET /auth/me": { status: 200, body: ME },
+      "GET /goals": { status: 200, body: listBody([]) },
+      "GET /goals/parent-options": { status: 200, body: [] },
+    });
+    renderScreen();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "New goal" }));
+    expect(
+      screen.getByRole("option", { name: "Not aligned to a parent goal" }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText(/No company or department goals/)).toBeInTheDocument();
+  });
+
+  it("[AC-050] a 422 cycle message appears on the Aligned to field", async () => {
+    mockApi({
+      "GET /auth/me": { status: 200, body: ME },
+      "GET /goals": { status: 200, body: listBody([goal()]) },
+      "GET /goals/parent-options": { status: 200, body: OPTIONS },
+      "GET /goals/g1": detailBody(goal()),
+      "PATCH /goals/g1": {
+        status: 422,
+        body: { errors: { parent_goal_id: "That would make the goal its own ancestor." } },
+      },
+    });
+    renderScreen();
+    const user = userEvent.setup();
+    await openGoal(user);
+    await user.click(await screen.findByRole("button", { name: "Edit goal" }));
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(
+      await screen.findByText("That would make the goal its own ancestor."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeInTheDocument();
+  });
+
+  it("[AC-051] HR sees the 409 as a re-align message and the goal stays", async () => {
+    mockApi({
+      "GET /auth/me": { status: 200, body: HR },
+      "GET /goals": { status: 200, body: listBody([goal()]) },
+      "GET /goals/g1": detailBody(goal()),
+      "DELETE /goals/g1": { status: 409, body: { child_count: 2 } },
+    });
+    renderScreen();
+    const user = userEvent.setup();
+    await openGoal(user);
+    await user.click(await screen.findByRole("button", { name: "Delete" }));
+    expect(
+      await screen.findByText(
+        "2 aligned goal(s) must be re-aligned or unlinked before this goal can be deleted.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Ship onboarding v2").length).toBeGreaterThan(0);
+  });
+
+  it("[AC-051] deleting a childless goal removes it from the list", async () => {
+    let listed = [goal()];
+    mockApi({
+      "GET /auth/me": { status: 200, body: HR },
+      "GET /goals": () => ({ status: 200, body: listBody(listed) }),
+      "GET /goals/g1": detailBody(goal()),
+      "DELETE /goals/g1": () => {
+        listed = [];
+        return { status: 204 };
+      },
+    });
+    renderScreen();
+    const user = userEvent.setup();
+    await openGoal(user);
+    await user.click(await screen.findByRole("button", { name: "Delete" }));
+    expect(await screen.findByText("No goals yet")).toBeInTheDocument();
+  });
+
+  it("[AC-052] HR gets a Level control; Department reveals a required selector", async () => {
+    const fn = mockApi({
+      "GET /auth/me": { status: 200, body: HR },
+      "GET /goals": { status: 200, body: listBody([]) },
+      "GET /departments": { status: 200, body: [{ id: "dp1", name: "Design" }] },
+      "POST /goals": { status: 201, body: goal({ id: "g5" }) },
+    });
+    renderScreen();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "New goal" }));
+    expect(screen.queryByLabelText("Department")).toBeNull();
+    await user.selectOptions(await screen.findByLabelText("Level"), "department");
+    await fillForm(user);
+    await user.click(screen.getByRole("button", { name: "Save goal" }));
+    expect(await screen.findByText("Choose a department for this goal.")).toBeInTheDocument();
+    expect(fn.mock.calls.some(([, i]) => (i as RequestInit)?.method === "POST")).toBe(false);
+    await waitFor(() =>
+      expect(within(screen.getByLabelText("Department")).getAllByRole("option")).toHaveLength(2),
+    );
+    await user.selectOptions(screen.getByLabelText("Department"), "dp1");
+    await user.click(screen.getByRole("button", { name: "Save goal" }));
+    await waitFor(() =>
+      expect(bodyOf(fn, "/goals")).toMatchObject({ level: "department", department_id: "dp1" }),
+    );
+  });
+
+  it("[AC-054] an employee has no Level control and sends no level", async () => {
+    const fn = mockApi({
+      "GET /auth/me": { status: 200, body: ME },
+      "GET /goals": { status: 200, body: listBody([]) },
+      "POST /goals": { status: 201, body: goal({ id: "g5" }) },
+    });
+    renderScreen();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "New goal" }));
+    expect(screen.queryByLabelText("Level")).toBeNull();
+    await fillForm(user);
+    await user.click(screen.getByRole("button", { name: "Save goal" }));
+    await waitFor(() =>
+      expect(fn.mock.calls.some(([, i]) => (i as RequestInit)?.method === "POST")).toBe(true),
+    );
+    expect(bodyOf(fn, "/goals").level).toBeUndefined();
+  });
+});

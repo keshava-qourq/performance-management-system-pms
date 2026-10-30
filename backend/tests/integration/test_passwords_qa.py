@@ -203,9 +203,13 @@ def test_ac029_hr_issued_reset_link_works_exactly_once(client):
     second = replay.post(
         f"/auth/tokens/{token}/accept", json={"password": "Third-T1me-Pass!"}, headers=H
     )
-    assert second.status_code in (400, 404, 409, 410, 422), (
-        f"AC-029/NFR-005: the reset link worked twice ({second.status_code})"
-    )
+    assert second.status_code in (
+        400,
+        404,
+        409,
+        410,
+        422,
+    ), f"AC-029/NFR-005: the reset link worked twice ({second.status_code})"
     assert replay.get("/auth/me").status_code == 401
     assert login(_fresh_client(), EMPLOYEE, "Third-T1me-Pass!").status_code == 401
     # The first new password still stands.
@@ -312,9 +316,10 @@ def test_nfr020_password_rules_come_from_system_settings(client):
         _set_setting(key, 8)
         login(client, EMPLOYEE)
         r = _change(client, DEV_PASSWORD, candidate)
-        assert r.status_code in (200, 204), (
-            f"NFR-020: an 8-character password was refused with a minimum of 8: {r.text}"
-        )
+        assert r.status_code in (
+            200,
+            204,
+        ), f"NFR-020: an 8-character password was refused with a minimum of 8: {r.text}"
         client.cookies.clear()
 
         _set_setting(key, 20)

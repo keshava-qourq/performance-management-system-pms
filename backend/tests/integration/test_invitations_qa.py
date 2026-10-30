@@ -189,9 +189,13 @@ def test_ac020_an_already_used_link_creates_no_account_and_no_session(client):
 
     before = _session_count(person["id"])
     replay, second = _accept(token, "Another-Str0ng-Pass!")
-    assert second.status_code in (400, 404, 409, 410, 422), (
-        f"NFR-005: a used invitation link was accepted again ({second.status_code})"
-    )
+    assert second.status_code in (
+        400,
+        404,
+        409,
+        410,
+        422,
+    ), f"NFR-005: a used invitation link was accepted again ({second.status_code})"
     assert "session=" not in second.headers.get("set-cookie", "")
     assert replay.get("/auth/me").status_code == 401
     assert _session_count(person["id"]) == before
@@ -216,9 +220,13 @@ def test_ac020_an_expired_link_creates_no_account_and_no_session(client):
         assert check.status_code == 410 or check.json().get("valid") is False
 
         anon, r = _accept(token)
-        assert r.status_code in (400, 404, 409, 410, 422), (
-            f"AC-020: an expired invitation link was accepted ({r.status_code})"
-        )
+        assert r.status_code in (
+            400,
+            404,
+            409,
+            410,
+            422,
+        ), f"AC-020: an expired invitation link was accepted ({r.status_code})"
         assert "session=" not in r.headers.get("set-cookie", "")
         assert anon.get("/auth/me").status_code == 401
         assert _session_count(person["id"]) == 0
@@ -252,9 +260,13 @@ def test_ac021_revoking_kills_the_link_immediately(client):
     check = _fresh_client().get(f"/auth/tokens/{token}")
     assert check.status_code == 410 or check.json().get("valid") is False
     anon, accepted = _accept(token)
-    assert accepted.status_code in (400, 404, 409, 410, 422), (
-        "AC-021: a revoked invitation link still worked"
-    )
+    assert accepted.status_code in (
+        400,
+        404,
+        409,
+        410,
+        422,
+    ), "AC-021: a revoked invitation link still worked"
     assert anon.get("/auth/me").status_code == 401
     assert _session_count(person["id"]) == 0
 
@@ -269,9 +281,13 @@ def test_ac021_reissuing_invalidates_the_previous_link_and_only_the_newest_works
     stale = _fresh_client().get(f"/auth/tokens/{old}")
     assert stale.status_code == 410 or stale.json().get("valid") is False
     anon, refused = _accept(old)
-    assert refused.status_code in (400, 404, 409, 410, 422), (
-        "AC-021/NFR-005: the previous invitation link still worked after a reissue"
-    )
+    assert refused.status_code in (
+        400,
+        404,
+        409,
+        410,
+        422,
+    ), "AC-021/NFR-005: the previous invitation link still worked after a reissue"
     assert anon.get("/auth/me").status_code == 401
 
     invitee, accepted = _accept(new)

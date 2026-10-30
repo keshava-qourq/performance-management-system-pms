@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from app import auth
 from app.database import get_db
-from app.models import AuditEvent, Employee, Goal
+from app.models import AuditEvent, Department, Employee, Goal, GoalComment
 from app.routers.employees import _brief, _invalid, _manager_chain
 
 router = APIRouter(tags=["goals"])
@@ -36,6 +36,16 @@ class GoalIn(BaseModel):
     period: str | None = None
     weighting: object | None = None
     parent_goal_id: uuid.UUID | None = None
+    level: str | None = None
+    department_id: uuid.UUID | None = None
+
+
+LEVELS = {"personal", "company", "department"}
+LOOP_MESSAGE = (
+    "This alignment would loop back to this goal, because the chosen parent "
+    "is already aligned under it."
+)
+BAD_PARENT = "Choose a parent goal from the list."
 
 
 class ProgressIn(BaseModel):
@@ -52,7 +62,12 @@ def _overdue(g: Goal) -> bool:
 
 
 def _out(db: Session, g: Goal) -> dict:
+    parent = db.get(Goal, g.parent_goal_id) if g.parent_goal_id else None
+    dept = db.get(Department, g.department_id) if g.department_id else None
     return {
+        "parent_title": parent.title if parent is not None else None,
+        "level": g.level,
+        "department": {"id": str(dept.id), "name": dept.name} if dept else None,
         "id": str(g.id),
         "owner": _brief(db.get(Employee, g.owner_id)),
         "title": g.title,
@@ -124,6 +139,159 @@ def _live(db: Session, goal_id: uuid.UUID) -> Goal | None:
     return None if g is None or g.deleted_at is not None else g
 
 
+def _may_view_goal(db: Session, viewer: Employee, g: Goal) -> bool:
+    """_may_read, plus company goals and goals of the viewer's own department."""
+    if _may_read(db, viewer, g.owner_id):
+        return True
+    if g.level == "company":
+        return True
+    return (
+        g.level == "department"
+        and g.department_id is not None
+        and g.department_id == viewer.department_id
+    )
+
+
+def _options(db: Session, owner: Employee) -> list[Goal]:
+    cond = Goal.level == "company"
+    if owner.department_id is not None:
+        cond = cond | ((Goal.level == "department") & (Goal.department_id == owner.department_id))
+    return list(
+        db.scalars(
+            select(Goal).where(Goal.deleted_at.is_(None), cond).order_by(Goal.level, Goal.title)
+        ).all()
+    )
+
+
+def _parent_error(
+    db: Session, owner_id: uuid.UUID, parent_id: uuid.UUID, own_id=None
+) -> str | None:
+    """Why `parent_id` cannot be this goal's parent, or None. Cycle-safe walk."""
+    seen: set[uuid.UUID] = set()
+    cur: uuid.UUID | None = parent_id
+    while cur is not None and cur not in seen:
+        if own_id is not None and cur == own_id:
+            return LOOP_MESSAGE
+        seen.add(cur)
+        node = db.get(Goal, cur)
+        cur = node.parent_goal_id if node is not None else None
+    parent = _live(db, parent_id)
+    if parent is None:
+        return BAD_PARENT
+    if parent.owner_id == owner_id:
+        return None
+    owner = db.get(Employee, owner_id)
+    if any(o.id == parent.id for o in _options(db, owner)):
+        return None
+    return BAD_PARENT
+
+
+def _level_errors(db: Session, level: str, department_id) -> dict[str, str]:
+    errors: dict[str, str] = {}
+    if level not in LEVELS:
+        errors["level"] = "Choose a valid level: personal, company or department."
+    elif level == "department":
+        if department_id is None:
+            errors["department_id"] = "Choose a department."
+        elif db.get(Department, department_id) is None:
+            errors["department_id"] = "The chosen department does not exist."
+    return errors
+
+
+def _comment_out(c: GoalComment, author: Employee) -> dict:
+    return {
+        "id": str(c.id),
+        "author": _brief(author),
+        "body": c.body,
+        "created_at": c.created_at.isoformat(),
+    }
+
+
+class CommentIn(BaseModel):
+    body: str | None = None
+
+
+team_reader = Depends(auth.require_role("manager", "hr_admin"))
+
+
+@router.get("/team/goals")
+def team_goals(db: Session = Depends(get_db), viewer: Employee = team_reader):
+    """Active direct reports with their goals, loaded in two queries."""
+    reports = db.scalars(
+        select(Employee)
+        .where(
+            Employee.manager_id == viewer.id,
+            Employee.deactivated.is_(False),
+            Employee.status == "active",
+        )
+        .order_by(Employee.full_name)
+    ).all()
+    by_owner: dict[uuid.UUID, list[Goal]] = {r.id: [] for r in reports}
+    if reports:
+        rows = db.scalars(
+            select(Goal)
+            .where(Goal.owner_id.in_(list(by_owner)), Goal.deleted_at.is_(None))
+            .order_by(Goal.due_date, Goal.title)
+        ).all()
+        for g in rows:
+            by_owner[g.owner_id].append(g)
+    result = []
+    for r in reports:
+        goals = by_owner[r.id]
+        total = round(sum(g.weighting for g in goals), 2)
+        result.append(
+            {
+                "employee": _brief(r),
+                "goals": [
+                    {
+                        "id": str(g.id),
+                        "title": g.title,
+                        "weighting": g.weighting,
+                        "progress": g.progress,
+                        "status": g.status,
+                        "due_date": g.due_date.isoformat(),
+                        "overdue": _overdue(g),
+                    }
+                    for g in goals
+                ],
+                "weighting_total": total,
+                "over_100_warning": total > 100,
+            }
+        )
+    return result
+
+
+@router.post("/goals/{goal_id}/comments", status_code=201)
+def add_comment(
+    goal_id: uuid.UUID, body: CommentIn, db: Session = Depends(get_db), actor: Employee = mutator
+):
+    goal = _live(db, goal_id)
+    if goal is None:
+        return Response(status_code=404)
+    if not (
+        actor.id == goal.owner_id
+        or actor.role == "hr_admin"
+        or actor.id in _manager_chain(db, goal.owner_id)
+    ):
+        raise auth.PolicyRefusal
+    text = (body.body or "").strip()
+    if not text:
+        return _invalid({"body": "Enter a comment."})
+    comment = GoalComment(goal_id=goal.id, author_id=actor.id, body=text)
+    db.add(comment)
+    db.flush()
+    _audit(db, actor, "goal_comment_added", goal, {"comment_id": str(comment.id)})
+    db.commit()
+    return _comment_out(comment, actor)
+
+
+@router.get("/goals/parent-options")
+def parent_options(
+    db: Session = Depends(get_db), viewer: Employee = Depends(auth.current_employee)
+):
+    return [{"id": str(g.id), "title": g.title, "level": g.level} for g in _options(db, viewer)]
+
+
 @router.get("/goals")
 def list_goals(
     employee_id: uuid.UUID | None = None,
@@ -172,11 +340,19 @@ def create_goal(body: GoalIn, db: Session = Depends(get_db), actor: Employee = m
         weighting, message = _weighting(body.weighting)
         if message:
             errors["weighting"] = message
-    if body.parent_goal_id is not None and _live(db, body.parent_goal_id) is None:
-        errors["parent_goal_id"] = "The chosen parent goal does not exist."
+    level = body.level if body.level is not None else "personal"
+    if level in {"company", "department"} and actor.role != "hr_admin":
+        raise auth.PolicyRefusal
+    errors.update(_level_errors(db, level, body.department_id))
+    if body.parent_goal_id is not None:
+        message = _parent_error(db, actor.id, body.parent_goal_id)
+        if message:
+            errors["parent_goal_id"] = message
     if errors:
         return _invalid(errors)
     goal = Goal(
+        level=level,
+        department_id=body.department_id if level == "department" else None,
         owner_id=actor.id,
         title=body.title.strip(),
         description=(body.description or "").strip() or None,
@@ -205,7 +381,7 @@ def get_goal(
     goal = _live(db, goal_id)
     if goal is None:
         return Response(status_code=404)
-    if not _may_read(db, viewer, goal.owner_id):
+    if not _may_view_goal(db, viewer, goal):
         raise auth.PolicyRefusal
     history = db.scalars(
         select(AuditEvent)
@@ -215,10 +391,22 @@ def get_goal(
     children = db.scalars(
         select(Goal).where(Goal.parent_goal_id == goal.id, Goal.deleted_at.is_(None))
     ).all()
+    children = [c for c in children if _may_read(db, viewer, c.owner_id)]
+    comments = db.scalars(
+        select(GoalComment)
+        .where(GoalComment.goal_id == goal.id)
+        .order_by(GoalComment.created_at, GoalComment.id)
+    ).all()
+    authors = {
+        e.id: e
+        for e in db.scalars(
+            select(Employee).where(Employee.id.in_({c.author_id for c in comments}))
+        ).all()
+    }
     return {
         "goal": _out(db, goal),
         "children": [_out(db, c) for c in children],
-        "comments": [],
+        "comments": [_comment_out(c, authors[c.author_id]) for c in comments],
         "history": [
             {
                 "action": e.action,
@@ -256,12 +444,31 @@ def update_goal(
         weighting, message = _weighting(body.weighting)
         if message:
             errors["weighting"] = message
+    level = goal.level
+    if "level" in sent or "department_id" in sent:
+        level = body.level if "level" in sent and body.level is not None else goal.level
+        dept_id = body.department_id if "department_id" in sent else goal.department_id
+        if (level != goal.level or "department_id" in sent) and level in {
+            "company",
+            "department",
+        }:
+            if actor.role != "hr_admin":
+                raise auth.PolicyRefusal
+        errors.update(_level_errors(db, level, dept_id))
+    else:
+        dept_id = goal.department_id
     if "parent_goal_id" in sent and body.parent_goal_id is not None:
-        if body.parent_goal_id == goal.id or _live(db, body.parent_goal_id) is None:
-            errors["parent_goal_id"] = "Choose a different parent goal."
+        message = _parent_error(db, goal.owner_id, body.parent_goal_id, goal.id)
+        if message:
+            errors["parent_goal_id"] = message
     if errors:
         return _invalid(errors)
     changed = {}
+    if level != goal.level or dept_id != goal.department_id:
+        goal.level = level
+        goal.department_id = dept_id if level == "department" else None
+        changed["level"] = level
+        changed["department_id"] = str(goal.department_id) if goal.department_id else None
     if "title" in sent:
         changed["title"] = goal.title = body.title.strip()
     if "description" in sent:

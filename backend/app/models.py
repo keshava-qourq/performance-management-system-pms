@@ -86,13 +86,38 @@ class Goal(Base):
     weighting: Mapped[float] = mapped_column(Float, default=0)
     progress: Mapped[int] = mapped_column(Integer, default=0)  # typed in, never calculated
     status: Mapped[str] = mapped_column(String(20), default="Not started")
-    parent_goal_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("goal.id"))
+    parent_goal_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("goal.id"), index=True)
+    level: Mapped[str] = mapped_column(String(20), default="personal")  # personal|company|dept
+    department_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("department.id"))
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     updated_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("employee.id"))
     progress_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     progress_updated_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("employee.id"))
+
+
+class GoalComment(Base):
+    __tablename__ = "goal_comment"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_id)
+    goal_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("goal.id"), index=True)
+    author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("employee.id"))
+    body: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class Feedback(Base):
+    __tablename__ = "feedback"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_id)
+    author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("employee.id"), index=True)
+    recipient_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("employee.id"), index=True)
+    type: Mapped[str] = mapped_column(String(20))
+    body: Mapped[str] = mapped_column(Text)
+    goal_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("goal.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    withdrawn_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    withdrawn_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("employee.id"))
 
 
 class AuditEvent(Base):

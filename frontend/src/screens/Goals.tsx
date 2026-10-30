@@ -5,14 +5,17 @@ import * as UI from "@/lib/ui";
 import { Icons } from "@/lib/icons";
 import { brand } from "@/lib/brand";
 import { ApiError } from "@/lib/api";
-import { FieldErrors } from "@/lib/employees";
+import { FieldErrors, useDepartments } from "@/lib/employees";
 import { formatDate } from "@/lib/dateFormat";
 import { useSession } from "@/lib/session";
 import {
   GOAL_STATUSES,
   type Goal,
   type GoalInput,
+  HasChildren,
   useCreateGoal,
+  useDeleteGoal,
+  useParentOptions,
   useGoal,
   useGoals,
   useRecordProgress,
@@ -190,6 +193,8 @@ type FormValues = {
   due_date: string;
   weighting: string;
   parent_goal_id: string;
+  level: string;
+  department_id: string;
 };
 
 const EMPTY_FORM: FormValues = {
@@ -199,6 +204,8 @@ const EMPTY_FORM: FormValues = {
   due_date: "",
   weighting: "",
   parent_goal_id: "",
+  level: "personal",
+  department_id: "",
 };
 
 const changedBy = (goal: Goal) =>
@@ -223,6 +230,11 @@ export default function Screen() {
 
   const detail = useGoal(mode === "view" ? selectedId : null);
   const create = useCreateGoal();
+  const remove = useDeleteGoal();
+  const parentOptions = useParentOptions();
+  const departments = useDepartments();
+  const isHr = role === "hr_admin" || role === "HR Admin";
+  const [deleteError, setDeleteError] = React.useState("");
   const update = useUpdateGoal();
   const recordProgress = useRecordProgress();
   const form = useForm<FormValues>({ defaultValues: EMPTY_FORM });
@@ -268,6 +280,8 @@ export default function Screen() {
       due_date: goal.due_date,
       weighting: String(goal.weighting),
       parent_goal_id: goal.parent_goal_id ?? "",
+      level: goal.level ?? "personal",
+      department_id: "",
     });
     setFormError("");
     setMode("edit");
@@ -296,6 +310,17 @@ export default function Screen() {
       weighting: values.weighting,
       parent_goal_id: values.parent_goal_id || null,
     };
+    // Only HR may set a level; everyone else always sends personal.
+    if (isHr) {
+      input.level = values.level;
+      if (values.level === "department") {
+        if (!values.department_id) {
+          form.setError("department_id", { message: "Choose a department for this goal." });
+          return;
+        }
+        input.department_id = values.department_id;
+      }
+    }
     try {
       if (mode === "edit" && selectedId) {
         const saved = await update.mutateAsync({ id: selectedId, input });
@@ -311,6 +336,23 @@ export default function Screen() {
       applyFieldErrors(error);
     }
   });
+
+  const deleteGoal = async (goal: Goal) => {
+    setDeleteError("");
+    try {
+      await remove.mutateAsync(goal.id);
+      setSelectedId(null);
+      setNotice({ text: `“${goal.title}” was deleted.`, kind: "ok" });
+    } catch (error) {
+      if (error instanceof HasChildren)
+        setDeleteError(
+          `${error.childCount} aligned goal(s) must be re-aligned or unlinked before this goal can be deleted.`,
+        );
+      else if (error instanceof ApiError && error.status === 403)
+        setDeleteError("You do not have permission to delete this goal.");
+      else setDeleteError("The goal could not be deleted.");
+    }
+  };
 
   const submitProgress = async (event: React.FormEvent, goal: Goal) => {
     event.preventDefault();
@@ -448,6 +490,11 @@ export default function Screen() {
                     {g.overdue ? <OverdueTag /> : null}
                   </span>
                 </div>
+                {g.parent_title ? (
+                  <div style={{ fontSize: 13, color: muted, marginTop: 6 }}>
+                    Aligned to: {g.parent_title}
+                  </div>
+                ) : null}
                 <div style={{ ...S.num, fontSize: 13, color: muted, marginTop: 6 }}>
                   Due {formatDate(g.due_date)} · Weighting {g.weighting}%
                 </div>
@@ -465,7 +512,8 @@ export default function Screen() {
   const renderForm = () => {
     const creating = mode === "create";
     const errors = form.formState.errors;
-    const parents = goals.filter((g) => g.id !== selectedId);
+    const parents = (parentOptions.data ?? []).filter((g) => g.id !== selectedId);
+    const level = form.watch("level");
     return (
       <form
         onSubmit={submitForm}
@@ -531,12 +579,42 @@ export default function Screen() {
             {...form.register("weighting")}
           />
         </Field>
-        <Field id="parent_goal_id" label="Aligned to" error={errors.parent_goal_id?.message}>
+        {isHr ? (
+          <Field id="level" label="Level">
+            <select id="level" style={S.input} {...form.register("level")}>
+              <option value="personal">Personal</option>
+              <option value="company">Company</option>
+              <option value="department">Department</option>
+            </select>
+          </Field>
+        ) : null}
+        {isHr && level === "department" ? (
+          <Field id="department_id" label="Department" error={errors.department_id?.message}>
+            <select id="department_id" style={S.input} {...form.register("department_id")}>
+              <option value="">Choose a department</option>
+              {(departments.data ?? []).map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : null}
+        <Field
+          id="parent_goal_id"
+          label="Aligned to"
+          error={errors.parent_goal_id?.message}
+          hint={
+            parents.length === 0
+              ? "No company or department goals are available to align to."
+              : undefined
+          }
+        >
           <select id="parent_goal_id" style={S.input} {...form.register("parent_goal_id")}>
             <option value="">Not aligned to a parent goal</option>
             {parents.map((g) => (
               <option key={g.id} value={g.id}>
-                {g.title}
+                {g.title} ({g.level})
               </option>
             ))}
           </select>
@@ -589,6 +667,12 @@ export default function Screen() {
           <dd style={{ margin: "0 0 12px", fontSize: 15, ...S.num }}>{formatDate(g.due_date)}</dd>
           <dt style={S.label}>Weighting</dt>
           <dd style={{ margin: "0 0 12px", fontSize: 15, ...S.num }}>{g.weighting}%</dd>
+          {g.parent_title ? (
+            <>
+              <dt style={S.label}>Alignment</dt>
+              <dd style={{ margin: "0 0 12px", fontSize: 15 }}>Aligned to: {g.parent_title}</dd>
+            </>
+          ) : null}
           <dt style={S.label}>Owner</dt>
           <dd style={{ margin: 0, fontSize: 15 }}>{g.owner?.full_name ?? "—"}</dd>
         </dl>
@@ -659,6 +743,43 @@ export default function Screen() {
             )}
           </form>
         </section>
+
+        <section
+          aria-labelledby="aligned-h"
+          style={{ paddingTop: 16, borderTop: `1px solid ${hair}` }}
+        >
+          <h3 id="aligned-h" style={{ ...S.heading, fontSize: 18, margin: "0 0 12px" }}>
+            Aligned goals
+          </h3>
+          {(detail.data?.children ?? []).length === 0 ? (
+            <p style={{ margin: 0, fontSize: 14, color: muted }}>
+              No goals are aligned to this one yet. Goals that name it as their parent will be
+              listed here.
+            </p>
+          ) : (
+            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
+              {(detail.data?.children ?? []).map((c) => (
+                <li key={c.id}>
+                  {c.title} — {c.owner?.full_name ?? "—"} · {c.progress}% · {c.status}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {isHr ? (
+          <section style={{ paddingTop: 16, borderTop: `1px solid ${hair}` }}>
+            {deleteError ? (
+              <p role="alert" style={{ margin: "0 0 12px", fontSize: 14, color: bad }}>
+                {deleteError}
+              </p>
+            ) : null}
+            <button type="button" style={S.ghost} onClick={() => deleteGoal(g)}>
+              <Icons.Trash className="h-4 w-4" />
+              Delete
+            </button>
+          </section>
+        ) : null}
       </div>
     );
   };

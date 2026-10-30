@@ -31,6 +31,8 @@ export interface Goal {
   progress: number;
   status: string;
   parent_goal_id: string | null;
+  parent_title?: string | null;
+  level?: string;
   // The API decides what counts as overdue; the UI never recomputes it.
   overdue: boolean;
   updated_at: string | null;
@@ -69,6 +71,24 @@ export interface GoalInput {
   due_date?: string;
   weighting?: string | number;
   parent_goal_id?: string | null;
+  level?: string;
+  department_id?: string;
+}
+
+// GET /goals/parent-options: company goals plus the user's own department's.
+export interface ParentOption {
+  id: string;
+  title: string;
+  level: string;
+}
+
+// A 409 on delete: the goal still has aligned children.
+export class HasChildren extends Error {
+  childCount: number;
+  constructor(childCount: number) {
+    super("This goal still has aligned goals.");
+    this.childCount = childCount;
+  }
 }
 
 export interface ProgressInput {
@@ -85,13 +105,20 @@ async function send<T>(path: string, method: string, body: unknown): Promise<T> 
     body: JSON.stringify(body),
   });
   if (response.ok) return (response.status === 204 ? undefined : await response.json()) as T;
-  let payload: { errors?: Record<string, string>; message?: string; detail?: unknown } = {};
+  let payload: {
+    errors?: Record<string, string>;
+    child_count?: number;
+    message?: string;
+    detail?: unknown;
+  } = {};
   try {
     payload = await response.json();
   } catch {
     /* no JSON body */
   }
   if (response.status === 422 && payload.errors) throw new FieldErrors(payload.errors);
+  if (response.status === 409 && typeof payload.child_count === "number")
+    throw new HasChildren(payload.child_count);
   const text = payload.message ?? (typeof payload.detail === "string" ? payload.detail : "");
   throw new ApiError(response.status, text);
 }
@@ -141,6 +168,21 @@ export function useRecordProgress() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: ProgressInput }) =>
       send<Goal>(`/goals/${encodeURIComponent(id)}/progress`, "POST", input),
+    onSuccess: refetch,
+  });
+}
+
+export const useParentOptions = () =>
+  useQuery({
+    queryKey: [...GOALS_KEY, "parent-options"],
+    retry: false,
+    queryFn: () => apiFetch<ParentOption[]>("/goals/parent-options"),
+  });
+
+export function useDeleteGoal() {
+  const refetch = useRefetchGoals();
+  return useMutation({
+    mutationFn: (id: string) => send<void>(`/goals/${encodeURIComponent(id)}`, "DELETE", {}),
     onSuccess: refetch,
   });
 }
