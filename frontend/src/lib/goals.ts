@@ -98,14 +98,11 @@ async function send<T>(path: string, method: string, body: unknown): Promise<T> 
 
 export const GOALS_KEY = ["goals"];
 
-export const useGoals = (employeeId?: string) =>
+export const useGoals = () =>
   useQuery({
-    queryKey: [...GOALS_KEY, employeeId ?? "me"],
+    queryKey: [...GOALS_KEY, "me"],
     retry: false,
-    queryFn: () =>
-      apiFetch<GoalList>(
-        employeeId ? `/goals?employee_id=${encodeURIComponent(employeeId)}` : "/goals",
-      ),
+    queryFn: () => apiFetch<GoalList>("/goals"),
   });
 
 export const useGoal = (id: string | null) =>

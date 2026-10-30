@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from app import auth
 from app.database import get_db
 from app.models import AuditEvent, Employee, Goal
+from app.routers.employees import _brief, _invalid, _manager_chain
 
 router = APIRouter(tags=["goals"])
 
@@ -40,14 +41,6 @@ class GoalIn(BaseModel):
 class ProgressIn(BaseModel):
     progress: object | None = None
     status: str | None = None
-
-
-def _invalid(errors: dict) -> JSONResponse:
-    return JSONResponse(status_code=422, content={"errors": errors})
-
-
-def _brief(e: Employee | None) -> dict | None:
-    return {"id": str(e.id), "full_name": e.full_name} if e else None
 
 
 def _period_for(due: date) -> str:
@@ -118,19 +111,6 @@ def _audit(db: Session, actor: Employee, action: str, g: Goal, details: dict | N
 
 def _may_write(actor: Employee, g: Goal) -> bool:
     return actor.id == g.owner_id or actor.role == "hr_admin"
-
-
-def _manager_chain(db: Session, employee_id: uuid.UUID) -> set[uuid.UUID]:
-    chain: set[uuid.UUID] = set()
-    current = db.get(Employee, employee_id)
-    seen = {employee_id}
-    while current is not None and current.manager_id is not None:
-        if current.manager_id in seen:
-            break
-        chain.add(current.manager_id)
-        seen.add(current.manager_id)
-        current = db.get(Employee, current.manager_id)
-    return chain
 
 
 def _may_read(db: Session, viewer: Employee, owner_id: uuid.UUID) -> bool:
