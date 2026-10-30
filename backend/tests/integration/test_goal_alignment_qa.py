@@ -157,9 +157,7 @@ def test_ac049_children_list_only_contains_children_the_caller_may_view(client):
     # Put the manager in the owner's chain.
     login(client, HR)
     emp, mgr = _by_email(client, EMPLOYEE), _by_email(client, MANAGER)
-    r = client.put(
-        f"/employees/{emp['id']}/manager", json={"manager_id": mgr["id"]}, headers=H
-    )
+    r = client.put(f"/employees/{emp['id']}/manager", json={"manager_id": mgr["id"]}, headers=H)
     assert r.status_code == 200, r.text
     hr_children = _detail(client, parent["id"])["children"]
     assert [c["id"] for c in hr_children] == [child["id"]]
@@ -300,9 +298,7 @@ def test_ac053_employee_sees_company_and_own_department_goals_only(client):
 def test_ac054_non_hr_cannot_create_company_or_department_goals(client, email, level):
     login(client, email)
     dept = _by_email_dept(client)
-    r = client.post(
-        "/goals", json=_body(title="Nope", level=level, department_id=dept), headers=H
-    )
+    r = client.post("/goals", json=_body(title="Nope", level=level, department_id=dept), headers=H)
     assert r.status_code == 403 and r.content == b"", r.text
     assert _count("SELECT count(*) FROM goal WHERE title = 'Nope'") == 0
 
@@ -323,9 +319,9 @@ def test_nfr001_non_hr_cannot_reach_another_departments_goal_by_id(client):
     r = client.get(f"/goals/{dg['id']}")
     assert r.status_code in (403, 404), r.text
     assert "Hidden Dept Goal" not in r.text
-    assert (
-        client.patch(f"/goals/{dg['id']}", json={"title": "X"}, headers=H).status_code
-        in (403, 404)
+    assert client.patch(f"/goals/{dg['id']}", json={"title": "X"}, headers=H).status_code in (
+        403,
+        404,
     )
 
 
