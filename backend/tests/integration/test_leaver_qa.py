@@ -332,9 +332,9 @@ def test_nfr010_nothing_is_hard_deleted_and_the_audit_event_is_complete(client):
     assert _deactivate(client, target["id"]).status_code == 200
 
     assert _count("SELECT count(*) FROM employee") == before
-    assert _count("SELECT count(*) FROM employee WHERE id = :i", i=target["id"]) == 1, (
-        "the leaver row was hard-deleted"
-    )
+    assert (
+        _count("SELECT count(*) FROM employee WHERE id = :i", i=target["id"]) == 1
+    ), "the leaver row was hard-deleted"
 
     with SessionLocal() as db:
         row = db.execute(

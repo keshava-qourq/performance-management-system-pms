@@ -74,6 +74,30 @@ def send_feedback(body: FeedbackIn, db: Session = Depends(get_db), actor: Employ
     return _out(db, f)
 
 
+OFF_STATEMENT = "Feedback is readable only by its author, its recipient and HR Admins."
+
+
+@router.get("/feedback/audience")
+def audience(
+    recipient_id: uuid.UUID | None = None,
+    db: Session = Depends(get_db),
+    _caller: Employee = Depends(auth.current_employee),
+):
+    visible = auth.get_setting(db, "manager_feedback_visible") is True
+    if not visible:
+        statement = OFF_STATEMENT
+    else:
+        statement = "Feedback is readable by its author, its recipient, HR Admins and the "
+        recipient = db.get(Employee, recipient_id) if recipient_id else None
+        manager = (
+            db.get(Employee, recipient.manager_id) if recipient and recipient.manager_id else None
+        )
+        statement += (
+            f"recipient's manager ({manager.full_name})." if manager else "recipient's manager."
+        )
+    return {"manager_feedback_visible": visible, "readers_statement": statement}
+
+
 @router.get("/feedback")
 def list_feedback(
     direction: str = "received",

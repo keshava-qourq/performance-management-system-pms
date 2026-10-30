@@ -5,6 +5,8 @@ import * as UI from "@/lib/ui";
 import { Icons } from "@/lib/icons";
 import { brand } from "@/lib/brand";
 import { useDepartments, useEmployees, useJobTitles } from "@/lib/employees";
+import { useAudience } from "@/lib/feedback";
+import { useSettings, useUpdateSettings } from "@/lib/settings";
 import { useNavigate } from "@/lib/navigate";
 import { useSession } from "@/lib/session";
 import DirectoryTab from "@/screens/PeopleDirectory";
@@ -37,8 +39,15 @@ export default function Screen() {
     .map((t) => (renames[t.id] ? { ...t, name: renames[t.id] } : t));
   const activeIn = (key, id) =>
     employees.filter((e) => (e[key] || {}).id === id && e.status !== "Deactivated").length;
-  const [mgrSeesFeedback, setMgrSeesFeedback] = React.useState(false);
   const [settingSaved, setSettingSaved] = React.useState("");
+  const [settingError, setSettingError] = React.useState("");
+  const settings = useSettings(sessionRole === "hr_admin");
+  const updateSettings = useUpdateSettings();
+  const audience = useAudience("", sessionRole === "hr_admin");
+  // Shown value is the stored one from the API (or the one being saved).
+  const mgrSeesFeedback = updateSettings.isPending
+    ? Boolean(updateSettings.variables?.manager_feedback_visible)
+    : Boolean(settings.data?.manager_feedback_visible);
   const [newDept, setNewDept] = React.useState("");
   const [deptMsg, setDeptMsg] = React.useState({ kind: "", text: "" });
   const [newTitle, setNewTitle] = React.useState("");
@@ -122,14 +131,20 @@ export default function Screen() {
       text: "“" + t.name + "” is now “" + n + "” on every employee record that uses it.",
     });
   };
-  const togglePref = (v) => {
-    const next = typeof v === "boolean" ? v : v && v.target ? v.target.checked : !mgrSeesFeedback;
-    setMgrSeesFeedback(next);
-    setSettingSaved(
-      next
-        ? "Saved. Managers can now read feedback addressed to people in their reporting line."
-        : "Saved. Managers can no longer see feedback addressed to their direct reports.",
-    );
+  const togglePref = async (v) => {
+    const next = v && v.target ? v.target.checked : !mgrSeesFeedback;
+    setSettingSaved("");
+    setSettingError("");
+    try {
+      await updateSettings.mutateAsync({ manager_feedback_visible: next });
+      setSettingSaved(
+        next
+          ? "Saved. Managers can now read feedback addressed to people in their reporting line."
+          : "Saved. Managers can no longer see feedback addressed to their direct reports.",
+      );
+    } catch {
+      setSettingError("The setting could not be saved. It has been left as it was. Try again.");
+    }
   };
 
   const renderOrg = () => (
@@ -306,9 +321,14 @@ export default function Screen() {
           </h3>
           <p className="text-sm mt-1" style={muted}>
             {mgrSeesFeedback
-              ? "On: feedback is readable by its author, its recipient, HR Admins and the recipient’s manager."
-              : "Off: feedback is readable only by its author, its recipient and HR Admins. Managers do not see it on a direct report’s record."}
+              ? "On: managers can read feedback addressed to people in their reporting line."
+              : "Off: managers do not see feedback on a direct report’s record."}
           </p>
+          {audience.data?.readers_statement && !updateSettings.isPending && (
+            <p className="text-sm mt-1" style={muted}>
+              {audience.data.readers_statement}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-sm" style={{ color: brand.primaryColor }}>
@@ -324,6 +344,11 @@ export default function Screen() {
       {!isHR && (
         <p className="text-xs mt-3" style={muted}>
           Only HR Admins can change this setting.
+        </p>
+      )}
+      {settingError && (
+        <p role="alert" className="text-sm mt-4" style={{ color: "indianred" }}>
+          {settingError}
         </p>
       )}
       {settingSaved && (

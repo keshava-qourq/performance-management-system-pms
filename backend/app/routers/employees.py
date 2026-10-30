@@ -409,12 +409,29 @@ def employee_record(
     reports = db.scalars(
         select(Employee).where(Employee.manager_id == emp.id).order_by(Employee.full_name)
     ).all()
+    from app.routers.feedback import _out as _feedback_out  # avoids a circular import
+
+    may_see = viewer.role == "hr_admin" or viewer.id == emp.id
+    if not may_see and viewer.role != "executive":
+        may_see = auth.get_setting(db, "manager_feedback_visible") is True
+    items = []
+    if may_see:
+        from app.models import Feedback
+
+        items = [
+            _feedback_out(db, f)
+            for f in db.scalars(
+                select(Feedback)
+                .where(Feedback.recipient_id == emp.id, Feedback.withdrawn_at.is_(None))
+                .order_by(Feedback.created_at.desc(), Feedback.id)
+            ).all()
+        ]
     return {
         "employee": _out(db, emp),
         "direct_reports": [_brief(r) for r in reports],
         "goals": [],
         "self_reviews": [],
-        "feedback": [],
+        "feedback": items,
     }
 
 
