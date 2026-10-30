@@ -424,7 +424,9 @@ export default function Screen() {
   );
   const fbLoading = dashboard.isLoading;
   const fbFailed = dashboard.isError;
-  const colleagues = (Array.isArray(picker.data) ? picker.data : []).filter((p) => p.id !== sessionUser?.id);
+  const colleagues = (Array.isArray(picker.data) ? picker.data : []).filter(
+    (p) => p.id !== sessionUser?.id,
+  );
   const audience = useAudience(form.to, composeOpen);
   const received = visibleFeedback
     .filter((f) => f.dir === "received")
@@ -576,7 +578,9 @@ export default function Screen() {
           body: error.errors.body,
         });
       } else {
-        setErrors({ form: error && error.message ? error.message : "It could not be sent. Try again." });
+        setErrors({
+          form: error && error.message ? error.message : "It could not be sent. Try again.",
+        });
       }
       return;
     }
@@ -1287,7 +1291,9 @@ export default function Screen() {
                   </option>
                 ))}
               </select>
-              {picker.isError ? err("fb-to-load", "Colleagues could not be loaded. Try again.") : null}
+              {picker.isError
+                ? err("fb-to-load", "Colleagues could not be loaded. Try again.")
+                : null}
               {err("fb-to-err", errors.to)}
             </div>
           </div>
