@@ -10,12 +10,6 @@ const NEW_PASSWORD = "Qa-E2e-Passphrase!";
 
 test.describe.configure({ mode: "serial" });
 
-function apiBase(page: Page) {
-  return page.evaluate(
-    () => (window as unknown as { __API__?: string }).__API__ ?? "http://localhost:8000",
-  );
-}
-
 async function signIn(page: Page, email: string, password = PASSWORD) {
   await page.goto("/sign-in");
   await page.getByLabel("Email").fill(email);

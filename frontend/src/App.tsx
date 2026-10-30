@@ -9,6 +9,7 @@ import Reviews from "@/screens/Reviews";
 import OneOnOnes from "@/screens/OneOnOnes";
 import People from "@/screens/People";
 import SetPassword from "@/screens/SetPassword";
+import Profile from "@/screens/Profile";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -60,6 +61,9 @@ function Shell() {
           <NavLink to="/people" className={navLinkClass}>
             {"People"}
           </NavLink>
+          <NavLink to="/my-profile" className={navLinkClass}>
+            {"My profile"}
+          </NavLink>
         </nav>
         <button
           type="button"
@@ -95,6 +99,7 @@ export default function App() {
         <Route path="/reviews" element={<Reviews />} />
         <Route path="/one-on-ones" element={<OneOnOnes />} />
         <Route path="/people" element={<People />} />
+        <Route path="/my-profile" element={<Profile />} />
       </Route>
       <Route path="*" element={<Navigate to="/sign-in" replace />} />
     </Routes>

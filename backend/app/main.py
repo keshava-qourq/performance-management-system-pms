@@ -1,9 +1,6 @@
 """Application entrypoint.
 
-Generated from the approved architecture: one router per component that owns
-endpoints, one route per endpoint the API spec declares. Every generated route
-is a stub that returns a typed placeholder, so the service starts, serves its
-OpenAPI document and passes its tests before a single handler is implemented.
+One router per component that owns endpoints.
 """
 
 from fastapi import Depends, FastAPI, Request
@@ -15,6 +12,8 @@ from app import auth
 from app.config import ALLOWED_ORIGINS
 from app.routers import auth as auth_router
 from app.routers import employees as employees_router
+from app.routers import goals as goals_router
+from app.routers import profile as profile_router
 from app.services import configured_services
 
 app = FastAPI(
@@ -27,6 +26,8 @@ app.add_exception_handler(auth.PolicyRefusal, auth.refusal_response)
 app.add_exception_handler(auth.Unauthenticated, auth.unauthenticated_response)
 app.include_router(auth_router.router)
 app.include_router(employees_router.router)
+app.include_router(goals_router.router)
+app.include_router(profile_router.router)
 
 
 @app.exception_handler(RequestValidationError)
@@ -64,5 +65,5 @@ app.add_middleware(
 
 @app.get("/health")
 async def health() -> dict[str, object]:
-    """Liveness probe, and the only route here that is not a stub."""
+    """Liveness probe."""
     return {"status": "ok", "services": configured_services()}

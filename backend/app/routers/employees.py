@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app import auth, tokens
 from app.database import get_db
 from app.models import AuditEvent, Department, Employee, JobTitle
+from app.routers import profile
 
 router = APIRouter(tags=["employees"])
 hr_admin = auth.require_role("hr_admin")
@@ -41,6 +42,9 @@ def _out(db: Session, e: Employee) -> dict:
         "job_title": {"id": str(title.id), "name": title.name} if title else None,
         "department": {"id": str(dept.id), "name": dept.name} if dept else None,
         "manager": _brief(manager),
+        "display_name": e.display_name,
+        "pronouns": e.pronouns,
+        "photo_url": profile.photo_url(e),
         "missing_manager": e.manager_id is None,
         "role": e.role,
         "status": e.status,
@@ -283,6 +287,58 @@ def deactivate(
     emp.updated_at = datetime.now(UTC)
     auth.deactivate_employee(db, emp, leaving_date=body.leaving_date)
     return _out(db, emp)
+
+
+@router.post("/employees/{employee_id}/invitations", status_code=201)
+def issue_invitation(
+    employee_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    actor: Employee = Depends(hr_admin),
+):
+    """HR invites an employee: a single-use, time-limited link (AC-018, NFR-005)."""
+    emp = db.get(Employee, employee_id)
+    if emp is None:
+        return Response(status_code=404)
+    raw, row = tokens.issue_token(db, emp.id, "invitation", actor.id)
+    if emp.status == "active" and emp.password_hash is None:
+        emp.status = "invited"
+    emp.updated_at = datetime.now(UTC)
+    db.add(
+        AuditEvent(
+            actor_id=actor.id,
+            action="invitation_issued",
+            entity_type="employee",
+            entity_id=emp.id,
+            subject_employee_id=emp.id,
+            details={"token_id": str(row.id)},
+        )
+    )
+    db.commit()
+    return {"link": tokens.link_for(raw), "expires_at": row.expires_at.isoformat()}
+
+
+@router.delete("/employees/{employee_id}/invitations", status_code=204)
+def revoke_invitation(
+    employee_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    actor: Employee = Depends(hr_admin),
+):
+    """Revoke the outstanding invitation link; it stops working at once (AC-021)."""
+    emp = db.get(Employee, employee_id)
+    if emp is None:
+        return Response(status_code=404)
+    tokens.revoke_tokens(db, emp.id, "invitation")
+    db.add(
+        AuditEvent(
+            actor_id=actor.id,
+            action="invitation_revoked",
+            entity_type="employee",
+            entity_id=emp.id,
+            subject_employee_id=emp.id,
+        )
+    )
+    db.commit()
+    return Response(status_code=204)
 
 
 @router.post("/employees/{employee_id}/password-resets", status_code=201)

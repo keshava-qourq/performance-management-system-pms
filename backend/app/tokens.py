@@ -54,7 +54,8 @@ def issue_token(
         )
         .values(revoked_at=now)
     )
-    minutes = float(get_setting(db, "reset_link_minutes") or 1440)
+    configured = get_setting(db, "reset_link_minutes")
+    minutes = float(1440 if configured is None else configured)
     raw = secrets.token_urlsafe(TOKEN_BYTES)
     row = AuthToken(
         employee_id=employee_id,
@@ -66,6 +67,21 @@ def issue_token(
     db.add(row)
     db.commit()
     return raw, row
+
+
+def revoke_tokens(db: Session, employee_id: uuid.UUID, purpose: str) -> None:
+    """End every outstanding link of this purpose for the account (AC-021)."""
+    db.execute(
+        update(AuthToken)
+        .where(
+            AuthToken.employee_id == employee_id,
+            AuthToken.purpose == purpose,
+            AuthToken.used_at.is_(None),
+            AuthToken.revoked_at.is_(None),
+        )
+        .values(revoked_at=datetime.now(UTC))
+    )
+    db.commit()
 
 
 def valid_token(db: Session, raw: str) -> AuthToken | None:
@@ -114,15 +130,15 @@ def unmet_rules(db: Session, password: str) -> list[str]:
     rules = password_rules(db)
     failures: list[str] = []
     if len(password or "") < rules["min_length"]:
-        failures.append(f"Use at least {rules['min_length']} characters.")
+        failures.append(f"Use a password of at least {rules['min_length']} characters.")
     if rules["require_uppercase"] and not any(c.isupper() for c in password):
-        failures.append("Include at least one uppercase letter.")
+        failures.append("Your password must include at least one uppercase letter.")
     if rules["require_lowercase"] and not any(c.islower() for c in password):
-        failures.append("Include at least one lowercase letter.")
+        failures.append("Your password must include at least one lowercase letter.")
     if rules["require_digit"] and not any(c.isdigit() for c in password):
-        failures.append("Include at least one number.")
+        failures.append("Your password must include at least one number.")
     if rules["require_symbol"] and not any(not c.isalnum() for c in password):
-        failures.append("Include at least one symbol.")
+        failures.append("Your password must include at least one symbol.")
     return failures
 
 
