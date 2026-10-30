@@ -274,7 +274,7 @@ def test_nfr015_team_goals_for_many_reports_within_timeout(client):
                     "m": mgr,
                 },
             )
-            for k in range(2):
+            for _k in range(2):
                 db.execute(
                     text(
                         "INSERT INTO goal (id, owner_id, title, target, due_date, period,"
