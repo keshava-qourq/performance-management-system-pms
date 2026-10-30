@@ -97,6 +97,15 @@ class Goal(Base):
     progress_updated_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("employee.id"))
 
 
+class GoalComment(Base):
+    __tablename__ = "goal_comment"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_id)
+    goal_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("goal.id"), index=True)
+    author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("employee.id"))
+    body: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
 class AuditEvent(Base):
     __tablename__ = "audit_event"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

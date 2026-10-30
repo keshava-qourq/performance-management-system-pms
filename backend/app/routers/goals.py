@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from app import auth
 from app.database import get_db
-from app.models import AuditEvent, Department, Employee, Goal
+from app.models import AuditEvent, Department, Employee, Goal, GoalComment
 from app.routers.employees import _brief, _invalid, _manager_chain
 
 router = APIRouter(tags=["goals"])
@@ -198,6 +198,93 @@ def _level_errors(db: Session, level: str, department_id) -> dict[str, str]:
     return errors
 
 
+def _comment_out(c: GoalComment, author: Employee) -> dict:
+    return {
+        "id": str(c.id),
+        "author": _brief(author),
+        "body": c.body,
+        "created_at": c.created_at.isoformat(),
+    }
+
+
+class CommentIn(BaseModel):
+    body: str | None = None
+
+
+team_reader = Depends(auth.require_role("manager", "hr_admin"))
+
+
+@router.get("/team/goals")
+def team_goals(db: Session = Depends(get_db), viewer: Employee = team_reader):
+    """Active direct reports with their goals, loaded in two queries."""
+    reports = db.scalars(
+        select(Employee)
+        .where(
+            Employee.manager_id == viewer.id,
+            Employee.deactivated.is_(False),
+            Employee.status == "active",
+        )
+        .order_by(Employee.full_name)
+    ).all()
+    by_owner: dict[uuid.UUID, list[Goal]] = {r.id: [] for r in reports}
+    if reports:
+        rows = db.scalars(
+            select(Goal)
+            .where(Goal.owner_id.in_(list(by_owner)), Goal.deleted_at.is_(None))
+            .order_by(Goal.due_date, Goal.title)
+        ).all()
+        for g in rows:
+            by_owner[g.owner_id].append(g)
+    result = []
+    for r in reports:
+        goals = by_owner[r.id]
+        total = round(sum(g.weighting for g in goals), 2)
+        result.append(
+            {
+                "employee": _brief(r),
+                "goals": [
+                    {
+                        "id": str(g.id),
+                        "title": g.title,
+                        "weighting": g.weighting,
+                        "progress": g.progress,
+                        "status": g.status,
+                        "due_date": g.due_date.isoformat(),
+                        "overdue": _overdue(g),
+                    }
+                    for g in goals
+                ],
+                "weighting_total": total,
+                "over_100_warning": total > 100,
+            }
+        )
+    return result
+
+
+@router.post("/goals/{goal_id}/comments", status_code=201)
+def add_comment(
+    goal_id: uuid.UUID, body: CommentIn, db: Session = Depends(get_db), actor: Employee = mutator
+):
+    goal = _live(db, goal_id)
+    if goal is None:
+        return Response(status_code=404)
+    if not (
+        actor.id == goal.owner_id
+        or actor.role == "hr_admin"
+        or actor.id in _manager_chain(db, goal.owner_id)
+    ):
+        raise auth.PolicyRefusal
+    text = (body.body or "").strip()
+    if not text:
+        return _invalid({"body": "Enter a comment."})
+    comment = GoalComment(goal_id=goal.id, author_id=actor.id, body=text)
+    db.add(comment)
+    db.flush()
+    _audit(db, actor, "goal_comment_added", goal, {"comment_id": str(comment.id)})
+    db.commit()
+    return _comment_out(comment, actor)
+
+
 @router.get("/goals/parent-options")
 def parent_options(
     db: Session = Depends(get_db), viewer: Employee = Depends(auth.current_employee)
@@ -305,10 +392,21 @@ def get_goal(
         select(Goal).where(Goal.parent_goal_id == goal.id, Goal.deleted_at.is_(None))
     ).all()
     children = [c for c in children if _may_read(db, viewer, c.owner_id)]
+    comments = db.scalars(
+        select(GoalComment)
+        .where(GoalComment.goal_id == goal.id)
+        .order_by(GoalComment.created_at, GoalComment.id)
+    ).all()
+    authors = {
+        e.id: e
+        for e in db.scalars(
+            select(Employee).where(Employee.id.in_({c.author_id for c in comments}))
+        ).all()
+    }
     return {
         "goal": _out(db, goal),
         "children": [_out(db, c) for c in children],
-        "comments": [],
+        "comments": [_comment_out(c, authors[c.author_id]) for c in comments],
         "history": [
             {
                 "action": e.action,
