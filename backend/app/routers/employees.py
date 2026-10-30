@@ -121,12 +121,41 @@ def _invalid(errors: dict) -> JSONResponse:
 
 
 @router.get("/employees")
-def list_employees(active_only: bool = False, db: Session = Depends(get_db), _hr=hr_only):
-    """The directory. Pickers for new goals, feedback and 1:1s pass active_only."""
-    query = select(Employee).order_by(Employee.full_name)
-    if active_only:
-        query = query.where(Employee.deactivated.is_(False), Employee.status == "active")
-    return [_out(db, e) for e in db.scalars(query).all()]
+def list_employees(
+    active_only: bool = False,
+    db: Session = Depends(get_db),
+    caller: Employee = Depends(auth.current_employee),
+):
+    """The directory (HR only). With active_only, a slim picker list for non-executives."""
+    if not active_only:
+        if caller.role != "hr_admin":
+            raise auth.PolicyRefusal
+        query = select(Employee).order_by(Employee.full_name)
+        return [_out(db, e) for e in db.scalars(query).all()]
+    if caller.role == "executive":
+        raise auth.PolicyRefusal
+    rows = db.scalars(
+        select(Employee)
+        .where(
+            Employee.deactivated.is_(False),
+            Employee.status == "active",
+            Employee.id != caller.id,
+        )
+        .order_by(Employee.full_name)
+    ).all()
+    out = []
+    for e in rows:
+        title = db.get(JobTitle, e.job_title_id) if e.job_title_id else None
+        dept = db.get(Department, e.department_id) if e.department_id else None
+        out.append(
+            {
+                "id": str(e.id),
+                "full_name": e.full_name,
+                "job_title": {"id": str(title.id), "name": title.name} if title else None,
+                "department": {"id": str(dept.id), "name": dept.name} if dept else None,
+            }
+        )
+    return out
 
 
 @router.post("/employees", status_code=201)

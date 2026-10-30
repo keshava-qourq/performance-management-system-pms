@@ -12,6 +12,7 @@ from app import auth
 from app.config import ALLOWED_ORIGINS
 from app.routers import auth as auth_router
 from app.routers import employees as employees_router
+from app.routers import feedback as feedback_router
 from app.routers import goals as goals_router
 from app.routers import profile as profile_router
 from app.services import configured_services
@@ -28,6 +29,7 @@ app.include_router(auth_router.router)
 app.include_router(employees_router.router)
 app.include_router(goals_router.router)
 app.include_router(profile_router.router)
+app.include_router(feedback_router.router)
 
 
 @app.exception_handler(RequestValidationError)

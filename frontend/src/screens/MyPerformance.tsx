@@ -7,6 +7,9 @@ import { Icons } from "@/lib/icons";
 import { brand } from "@/lib/brand";
 import { useNavigate } from "@/lib/navigate";
 import { UnmetRules, useChangePassword } from "@/lib/account";
+import { FieldErrors } from "@/lib/employees";
+import { useAudience, useDashboard, useRecipientPicker, useSendFeedback } from "@/lib/feedback";
+import { useSession } from "@/lib/session";
 
 const { Button, Input, Textarea, Label, Switch, Avatar, Tabs, Empty } = UI;
 
@@ -335,7 +338,12 @@ export default function Screen() {
   const navigate = useNavigate();
   const [tab, setTab] = React.useState("overview");
   const [newStarter, setNewStarter] = React.useState(false);
-  const [feedback, setFeedback] = React.useState(FEEDBACK_SEED);
+  // Received feedback comes from GET /me/dashboard; only the given list is still seeded.
+  const [feedback, setFeedback] = React.useState(FEEDBACK_SEED.filter((f) => f.dir === "given"));
+  const { user: sessionUser } = useSession();
+  const dashboard = useDashboard();
+  const picker = useRecipientPicker();
+  const sendFeedback = useSendFeedback();
   const [fbDir, setFbDir] = React.useState("received");
   const [filters, setFilters] = React.useState({ type: "All", from: "", to: "" });
   const [composeOpen, setComposeOpen] = React.useState(false);
@@ -401,7 +409,23 @@ export default function Screen() {
   };
 
   const ownGoals = newStarter ? [] : GOALS;
-  const visibleFeedback = newStarter ? feedback.filter((f) => f.sentNow) : feedback;
+  const apiReceived = (dashboard.data?.feedback ?? []).map((f) => ({
+    id: f.id,
+    dir: "received",
+    type: f.type.toLowerCase() === "praise" ? "Praise" : "Constructive",
+    person: f.author?.full_name ?? "Unknown colleague",
+    date: (f.created_at ?? "").slice(0, 10),
+    body: f.body,
+    goal: f.goal ?? "",
+    unread: false,
+  }));
+  const visibleFeedback = (newStarter ? feedback.filter((f) => f.sentNow) : feedback).concat(
+    apiReceived,
+  );
+  const fbLoading = dashboard.isLoading;
+  const fbFailed = dashboard.isError;
+  const colleagues = (Array.isArray(picker.data) ? picker.data : []).filter((p) => p.id !== sessionUser?.id);
+  const audience = useAudience(form.to, composeOpen);
   const received = visibleFeedback
     .filter((f) => f.dir === "received")
     .sort((a, b) => (a.date < b.date ? 1 : -1));
@@ -535,40 +559,35 @@ export default function Screen() {
   );
 
   // ---------- feedback actions ----------
-  const submitFeedback = (e) => {
+  const submitFeedback = async (e) => {
     e.preventDefault();
-    const er = {};
-    if (!form.to) er.to = "Choose a colleague to send this to.";
-    else if (form.to === "me")
-      er.to =
-        (form.kind === "Praise" ? "Praise" : "Feedback") + " must be addressed to someone else.";
-    if (!form.body.trim()) er.body = "Write a message before sending.";
-    setErrors(er);
-    if (Object.keys(er).length) return;
-    const person = PEOPLE.find((p) => p.id === form.to);
-    const item = {
-      id: "n" + Date.now(),
-      dir: "given",
-      type: form.kind === "Praise" ? "Praise" : "Constructive",
-      person: person.name,
-      date: TODAY,
-      body: form.body.trim(),
-      goal: form.kind === "Praise" ? "" : form.goal,
-      withdrawn: "",
-      sentNow: true,
-      fresh: true,
-    };
-    setFeedback([item].concat(feedback));
+    setErrors({});
+    const person = colleagues.find((p) => p.id === form.to);
+    try {
+      await sendFeedback.mutateAsync({
+        recipient_id: form.to || null,
+        type: form.kind === "Praise" ? "praise" : "constructive",
+        body: form.body,
+      });
+    } catch (error) {
+      if (error instanceof FieldErrors) {
+        setErrors({
+          to: error.errors.recipient_id ?? error.errors.recipient,
+          body: error.errors.body,
+        });
+      } else {
+        setErrors({ form: error && error.message ? error.message : "It could not be sent. Try again." });
+      }
+      return;
+    }
     setNotice(
-      (item.type === "Praise" ? "Praise" : "Feedback") +
+      (form.kind === "Praise" ? "Praise" : "Feedback") +
         " sent to " +
-        person.name +
-        ". It now appears under Given.",
+        (person ? person.full_name : "your colleague") +
+        ".",
     );
     setForm({ kind: form.kind, to: "", body: "", goal: "" });
     setComposeOpen(false);
-    setFbDir("given");
-    setFilters({ type: "All", from: "", to: "" });
   };
   const withdraw = (id) => {
     setFeedback(feedback.map((f) => (f.id === id ? { ...f, withdrawn: TODAY } : f)));
@@ -587,14 +606,11 @@ export default function Screen() {
   const filtersActive = filters.type !== "All" || filters.from || filters.to;
 
   const recipientGoals = RECIPIENT_GOALS[form.to] || [];
-  const recipient = PEOPLE.find((p) => p.id === form.to);
-  const readers =
-    "You, " +
-    (recipient ? recipient.name : "the recipient") +
-    " and HR Admins can read this. " +
-    (MANAGER_CAN_SEE_FEEDBACK
-      ? (recipient ? recipient.name + "’s manager" : "Their manager") + " can read it too."
-      : "Their manager cannot read it.");
+  const readers = audience.data?.readers_statement
+    ? audience.data.readers_statement
+    : audience.isError
+      ? "Who can read this could not be loaded. Try again before sending."
+      : "Loading who can read this…";
 
   // ---------- profile actions ----------
   const saveProfile = (e) => {
@@ -865,7 +881,13 @@ export default function Screen() {
         <div className="flex flex-col gap-8">
           <section aria-labelledby="fb-h" style={{ ...panel, padding: 24 }}>
             {sectionHead(<span id="fb-h">Latest feedback</span>)}
-            {received.length === 0 ? (
+            {fbLoading ? (
+              <p role="status">Loading your feedback…</p>
+            ) : fbFailed ? (
+              <p role="alert" style={{ color: warn }}>
+                Your feedback could not be loaded. Try again.
+              </p>
+            ) : received.length === 0 ? (
               <Empty
                 title="Nothing received yet"
                 description="Praise and feedback colleagues write to you will appear here, newest first."
@@ -1257,13 +1279,15 @@ export default function Screen() {
                 style={{ ...inputStyle, marginTop: 8, borderColor: errors.to ? warn : undefined }}
               >
                 <option value="">Choose a colleague…</option>
-                <option value="me">{ME.name} (you)</option>
-                {PEOPLE.map((p) => (
+                {picker.isLoading ? <option disabled>Loading colleagues…</option> : null}
+                {colleagues.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} — {p.title}
+                    {p.full_name}
+                    {p.job_title ? " — " + p.job_title.name : ""}
                   </option>
                 ))}
               </select>
+              {picker.isError ? err("fb-to-load", "Colleagues could not be loaded. Try again.") : null}
               {err("fb-to-err", errors.to)}
             </div>
           </div>
@@ -1330,8 +1354,9 @@ export default function Screen() {
               {readers}
             </span>
           </p>
+          {err("fb-form-err", errors.form)}
           <div className="flex flex-wrap gap-3" style={{ marginTop: 24 }}>
-            <Button type="submit" style={btnPrimary}>
+            <Button type="submit" style={btnPrimary} disabled={sendFeedback.isPending}>
               Send {form.kind === "Praise" ? "praise" : "feedback"}
             </Button>
             <Button
@@ -1430,7 +1455,13 @@ export default function Screen() {
         >
           Showing {listForDir.length} of {dirTotal}, newest first
         </p>
-        {dirTotal === 0 ? (
+        {fbDir === "received" && fbLoading ? (
+          <p role="status">Loading your feedback…</p>
+        ) : fbDir === "received" && fbFailed ? (
+          <p role="alert" style={{ color: warn }}>
+            Your feedback could not be loaded. Try again.
+          </p>
+        ) : dirTotal === 0 ? (
           <Empty
             title={
               fbDir === "received" ? "No praise or feedback yet" : "You have not sent anything yet"
