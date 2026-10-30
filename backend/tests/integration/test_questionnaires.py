@@ -14,8 +14,8 @@ def _purge():
     yield
     with SessionLocal() as db:
         for sql in (
-            "DELETE FROM questionnaire_question",
-            "DELETE FROM questionnaire_competency",
+            "DELETE FROM question",
+            "DELETE FROM competency",
             "DELETE FROM questionnaire_version",
             "DELETE FROM questionnaire_template",
             "DELETE FROM rating_scale_point",
@@ -197,17 +197,13 @@ def test_nfr010_an_edit_leaves_the_previous_version_rows_untouched(client):
     login(client, HR)
     tid = _template(client).json()["id"]
     with SessionLocal() as db:
-        before = db.execute(
-            text("SELECT id, text, type FROM questionnaire_question ORDER BY id")
-        ).all()
+        before = db.execute(text("SELECT id, text, type FROM question ORDER BY id")).all()
     client.put(
         f"/questionnaires/{tid}",
         json={"name": "N", "competencies": [{"name": "C", "questions": []}]},
         headers=H,
     )
     with SessionLocal() as db:
-        after = db.execute(
-            text("SELECT id, text, type FROM questionnaire_question ORDER BY id")
-        ).all()
+        after = db.execute(text("SELECT id, text, type FROM question ORDER BY id")).all()
         versions = db.execute(text("SELECT count(*) FROM questionnaire_version")).scalar()
     assert all(row in after for row in before) and versions == 2

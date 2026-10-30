@@ -163,7 +163,7 @@ class QuestionnaireVersion(Base):
 
 
 class QuestionnaireCompetency(Base):
-    __tablename__ = "questionnaire_competency"
+    __tablename__ = "competency"
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_id)
     version_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("questionnaire_version.id"), index=True
@@ -173,11 +173,9 @@ class QuestionnaireCompetency(Base):
 
 
 class QuestionnaireQuestion(Base):
-    __tablename__ = "questionnaire_question"
+    __tablename__ = "question"
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_id)
-    competency_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("questionnaire_competency.id"), index=True
-    )
+    competency_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("competency.id"), index=True)
     text: Mapped[str] = mapped_column(Text)
     type: Mapped[str] = mapped_column(String(10))  # rated|text|both
     mandatory: Mapped[bool] = mapped_column(Boolean, default=True)

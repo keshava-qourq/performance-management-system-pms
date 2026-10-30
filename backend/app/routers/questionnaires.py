@@ -43,6 +43,14 @@ class PointIn(BaseModel):
 class ScaleIn(BaseModel):
     name: str | None = None
     points: list[PointIn] | None = None
+    # The UI and the contract call the same thing "labels"; accept either name.
+    labels: list[PointIn] | None = None
+
+    def all_points(self) -> list[PointIn]:
+        return self.points if self.points is not None else (self.labels or [])
+
+    def field(self) -> str:
+        return "points" if self.points is not None or self.labels is None else "labels"
 
 
 class QuestionIn(BaseModel):
@@ -71,21 +79,19 @@ def _scale_out(db: Session, scale: RatingScale) -> dict:
         .where(RatingScalePoint.scale_id == scale.id)
         .order_by(RatingScalePoint.value)
     ).all()
-    return {
-        "id": str(scale.id),
-        "name": scale.name,
-        "points": [{"value": p.value, "label": p.label} for p in points],
-    }
+    out = [{"value": p.value, "label": p.label} for p in points]
+    return {"id": str(scale.id), "name": scale.name, "points": out, "labels": out}
 
 
 @router.post("/rating-scales", status_code=201)
 def create_rating_scale(body: ScaleIn, db: Session = Depends(get_db), _hr=hr_admin):
     errors: dict[str, str] = {}
+    field = body.field()
     if not (body.name or "").strip():
         errors["name"] = "Enter a name for this rating scale."
-    points = body.points or []
+    points = body.all_points()
     if len(points) < MIN_POINTS or len(points) > MAX_POINTS:
-        errors["points"] = (
+        errors[field] = (
             f"Enter between {MIN_POINTS} and {MAX_POINTS} points for this rating scale."
         )
     seen: set[int] = set()
@@ -94,9 +100,9 @@ def create_rating_scale(body: ScaleIn, db: Session = Depends(get_db), _hr=hr_adm
         value = p.value if isinstance(p.value, int) and not isinstance(p.value, bool) else i + 1
         label = (p.label or "").strip()
         if not label:
-            errors[f"points.{i}.label"] = "Enter a label for this point."
+            errors[f"{field}.{i}.label"] = "Enter a label for this point."
         if value in seen:
-            errors[f"points.{i}.value"] = "Each point must have a different value."
+            errors[f"{field}.{i}.value"] = "Each point must have a different value."
         seen.add(value)
         cleaned.append((value, label))
     if errors:
@@ -114,6 +120,16 @@ def create_rating_scale(body: ScaleIn, db: Session = Depends(get_db), _hr=hr_adm
 def list_rating_scales(db: Session = Depends(get_db), _hr=hr_admin):
     rows = db.scalars(select(RatingScale).order_by(RatingScale.created_at)).all()
     return [_scale_out(db, s) for s in rows]
+
+
+@router.get("/rating-scales/{scale_id}")
+def get_rating_scale(scale_id: uuid.UUID, db: Session = Depends(get_db), _hr=hr_admin):
+    """Read only: a scale's labels are never edited in place, a new scale is
+    created instead, so a submitted review keeps its labels (NFR-010)."""
+    scale = db.get(RatingScale, scale_id)
+    if scale is None:
+        return Response(status_code=404)
+    return _scale_out(db, scale)
 
 
 # -------------------------------------------------------------------- questionnaires
@@ -273,14 +289,17 @@ def _audit(db: Session, actor: Employee, action: str, version: QuestionnaireVers
 
 
 @router.get("/questionnaires")
-def list_questionnaires(db: Session = Depends(get_db), _hr=hr_admin):
+def list_questionnaires(
+    status: str | None = None, db: Session = Depends(get_db), _hr=hr_admin
+):
+    """Every template with its latest version; `status` narrows the list."""
     templates = db.scalars(
         select(QuestionnaireTemplate).order_by(QuestionnaireTemplate.created_at)
     ).all()
     out = []
     for t in templates:
         version = _latest(db, t.id)
-        if version is not None:
+        if version is not None and (status is None or version.status == status):
             out.append(_summary(version))
     return out
 
