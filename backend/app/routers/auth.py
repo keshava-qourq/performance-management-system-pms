@@ -154,8 +154,9 @@ def accept_token(token: str, body: AcceptIn, response: Response, db: Session = D
     if refused is not None:
         return refused
     emp = db.get(Employee, row.employee_id)
-    if emp is None or emp.deactivated or emp.status != "active":
+    if emp is None or emp.deactivated or emp.status not in {"active", "invited"}:
         return JSONResponse(status_code=410, content={"detail": "This link is no longer valid."})
+    emp.status = "active"  # accepting an invitation activates the account (AC-019)
     emp.password_hash = auth.hash_password(body.password)
     emp.updated_at = datetime.now(UTC)
     db.add(

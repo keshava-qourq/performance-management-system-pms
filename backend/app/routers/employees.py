@@ -285,6 +285,58 @@ def deactivate(
     return _out(db, emp)
 
 
+@router.post("/employees/{employee_id}/invitations", status_code=201)
+def issue_invitation(
+    employee_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    actor: Employee = Depends(hr_admin),
+):
+    """HR invites an employee: a single-use, time-limited link (AC-018, NFR-005)."""
+    emp = db.get(Employee, employee_id)
+    if emp is None:
+        return Response(status_code=404)
+    raw, row = tokens.issue_token(db, emp.id, "invitation", actor.id)
+    if emp.status == "active" and emp.password_hash is None:
+        emp.status = "invited"
+    emp.updated_at = datetime.now(UTC)
+    db.add(
+        AuditEvent(
+            actor_id=actor.id,
+            action="invitation_issued",
+            entity_type="employee",
+            entity_id=emp.id,
+            subject_employee_id=emp.id,
+            details={"token_id": str(row.id)},
+        )
+    )
+    db.commit()
+    return {"link": tokens.link_for(raw), "expires_at": row.expires_at.isoformat()}
+
+
+@router.delete("/employees/{employee_id}/invitations", status_code=204)
+def revoke_invitation(
+    employee_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    actor: Employee = Depends(hr_admin),
+):
+    """Revoke the outstanding invitation link; it stops working at once (AC-021)."""
+    emp = db.get(Employee, employee_id)
+    if emp is None:
+        return Response(status_code=404)
+    tokens.revoke_tokens(db, emp.id, "invitation")
+    db.add(
+        AuditEvent(
+            actor_id=actor.id,
+            action="invitation_revoked",
+            entity_type="employee",
+            entity_id=emp.id,
+            subject_employee_id=emp.id,
+        )
+    )
+    db.commit()
+    return Response(status_code=204)
+
+
 @router.post("/employees/{employee_id}/password-resets", status_code=201)
 def issue_password_reset(
     employee_id: uuid.UUID,
