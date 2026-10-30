@@ -120,6 +120,70 @@ class Feedback(Base):
     withdrawn_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("employee.id"))
 
 
+class RatingScale(Base):
+    __tablename__ = "rating_scale"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_id)
+    name: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class RatingScalePoint(Base):
+    __tablename__ = "rating_scale_point"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_id)
+    scale_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rating_scale.id"), index=True)
+    value: Mapped[int] = mapped_column(Integer)
+    label: Mapped[str] = mapped_column(String(200))
+
+
+class QuestionnaireTemplate(Base):
+    __tablename__ = "questionnaire_template"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_id)
+    name: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class QuestionnaireVersion(Base):
+    """An immutable snapshot of a template: edits add a version (NFR-010)."""
+
+    __tablename__ = "questionnaire_version"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_id)
+    template_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("questionnaire_template.id"), index=True
+    )
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    name: Mapped[str] = mapped_column(String(200))
+    status: Mapped[str] = mapped_column(String(20), default="draft")  # draft|published
+    rating_scale_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("rating_scale.id"))
+    # The scale labels as they were when this version was created; a later edit
+    # of the scale never changes what a submitted review shows (NFR-010).
+    scale_snapshot: Mapped[dict | None] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class QuestionnaireCompetency(Base):
+    __tablename__ = "questionnaire_competency"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_id)
+    version_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("questionnaire_version.id"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(200))
+    position: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class QuestionnaireQuestion(Base):
+    __tablename__ = "questionnaire_question"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_id)
+    competency_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("questionnaire_competency.id"), index=True
+    )
+    text: Mapped[str] = mapped_column(Text)
+    type: Mapped[str] = mapped_column(String(10))  # rated|text|both
+    mandatory: Mapped[bool] = mapped_column(Boolean, default=True)
+    position: Mapped[int] = mapped_column(Integer, default=0)
+
+
 class AuditEvent(Base):
     __tablename__ = "audit_event"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
