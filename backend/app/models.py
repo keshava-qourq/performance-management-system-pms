@@ -86,7 +86,9 @@ class Goal(Base):
     weighting: Mapped[float] = mapped_column(Float, default=0)
     progress: Mapped[int] = mapped_column(Integer, default=0)  # typed in, never calculated
     status: Mapped[str] = mapped_column(String(20), default="Not started")
-    parent_goal_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("goal.id"))
+    parent_goal_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("goal.id"), index=True)
+    level: Mapped[str] = mapped_column(String(20), default="personal")  # personal|company|dept
+    department_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("department.id"))
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
