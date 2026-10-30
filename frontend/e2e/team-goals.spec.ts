@@ -81,9 +81,12 @@ test("[AC-055] [AC-056] [AC-057] manager sees reports' goals, comments, and reas
     // AC-055: the manager's Team goals screen lists the report and the goal.
     await signIn(page, MANAGER);
     await page.getByRole("link", { name: "Goals" }).click();
-    await page.getByRole("tab", { name: /Team goals/i }).or(
-      page.getByRole("link", { name: /Team goals/i }),
-    ).or(page.getByRole("button", { name: /Team goals/i })).first().click();
+    await page
+      .getByRole("tab", { name: /Team goals/i })
+      .or(page.getByRole("link", { name: /Team goals/i }))
+      .or(page.getByRole("button", { name: /Team goals/i }))
+      .first()
+      .click();
     await expect(page.getByText("Emi Employee").first()).toBeVisible();
     await expect(page.getByText(title)).toBeVisible();
     await expect(page.getByText(/Not started/).first()).toBeVisible();
@@ -91,10 +94,16 @@ test("[AC-055] [AC-056] [AC-057] manager sees reports' goals, comments, and reas
     // AC-056: the manager comments; blank comment is refused.
     const box = page.getByLabel(/comment/i).first();
     await box.fill("   ");
-    await page.getByRole("button", { name: /comment/i }).first().click();
+    await page
+      .getByRole("button", { name: /comment/i })
+      .first()
+      .click();
     await expect(page.getByText("Enter a comment.")).toBeVisible();
     await box.fill(comment);
-    await page.getByRole("button", { name: /comment/i }).first().click();
+    await page
+      .getByRole("button", { name: /comment/i })
+      .first()
+      .click();
     await expect(page.getByText(comment).first()).toBeVisible();
     await signOut(page);
 
@@ -118,7 +127,12 @@ test("[AC-055] [AC-056] [AC-057] manager sees reports' goals, comments, and reas
     await expect(page.getByText(title)).toHaveCount(0);
   } finally {
     await page.goto("/sign-in");
-    if (await page.getByRole("button", { name: "Sign out" }).isVisible().catch(() => false)) {
+    if (
+      await page
+        .getByRole("button", { name: "Sign out" })
+        .isVisible()
+        .catch(() => false)
+    ) {
       await signOut(page);
     }
     await signIn(page, HR);
