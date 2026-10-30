@@ -28,8 +28,7 @@ export default function Screen() {
   const data = profile.data;
 
   React.useEffect(() => {
-    if (data)
-      form.reset({ display_name: data.display_name ?? "", pronouns: data.pronouns ?? "" });
+    if (data) form.reset({ display_name: data.display_name ?? "", pronouns: data.pronouns ?? "" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.display_name, data?.pronouns]);
 
@@ -59,8 +58,7 @@ export default function Screen() {
       if (error instanceof FieldErrors) {
         for (const [field, message] of Object.entries(error.errors))
           form.setError(field as keyof FormValues, { message });
-      } else
-        setFormError(error instanceof Error && error.message ? error.message : "Not saved.");
+      } else setFormError(error instanceof Error && error.message ? error.message : "Not saved.");
     }
   });
 
@@ -159,8 +157,7 @@ export default function Screen() {
               <React.Fragment key={label}>
                 <dt>{label}</dt>
                 <dd>
-                  <span aria-label={label}>{value}</span>{" "}
-                  <UI.Badge>{"Maintained by HR"}</UI.Badge>
+                  <span aria-label={label}>{value}</span> <UI.Badge>{"Maintained by HR"}</UI.Badge>
                 </dd>
               </React.Fragment>
             ))}
