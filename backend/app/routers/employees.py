@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app import auth, tokens
 from app.database import get_db
-from app.models import AuditEvent, Department, Employee, JobTitle
+from app.models import AuditEvent, Department, Employee, Feedback, JobTitle
 from app.routers import profile
 
 router = APIRouter(tags=["employees"])
@@ -416,8 +416,6 @@ def employee_record(
         may_see = auth.get_setting(db, "manager_feedback_visible") is True
     items = []
     if may_see:
-        from app.models import Feedback
-
         items = [
             _feedback_out(db, f)
             for f in db.scalars(
