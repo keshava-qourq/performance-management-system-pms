@@ -91,9 +91,7 @@ def create_rating_scale(body: ScaleIn, db: Session = Depends(get_db), _hr=hr_adm
         errors["name"] = "Enter a name for this rating scale."
     points = body.all_points()
     if len(points) < MIN_POINTS or len(points) > MAX_POINTS:
-        errors[field] = (
-            f"Enter between {MIN_POINTS} and {MAX_POINTS} points for this rating scale."
-        )
+        errors[field] = f"Enter between {MIN_POINTS} and {MAX_POINTS} points for this rating scale."
     seen: set[int] = set()
     cleaned: list[tuple[int, str]] = []
     for i, p in enumerate(points):
@@ -289,9 +287,7 @@ def _audit(db: Session, actor: Employee, action: str, version: QuestionnaireVers
 
 
 @router.get("/questionnaires")
-def list_questionnaires(
-    status: str | None = None, db: Session = Depends(get_db), _hr=hr_admin
-):
+def list_questionnaires(status: str | None = None, db: Session = Depends(get_db), _hr=hr_admin):
     """Every template with its latest version; `status` narrows the list."""
     templates = db.scalars(
         select(QuestionnaireTemplate).order_by(QuestionnaireTemplate.created_at)

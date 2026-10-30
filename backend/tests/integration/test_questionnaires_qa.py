@@ -268,9 +268,9 @@ def test_ac059_an_invalid_question_type_is_422_and_stores_nothing(client, bad):
     r = client.post("/questionnaires", json=body, headers=H)
     assert r.status_code == 422, f"AC-059: question type {bad!r} was accepted"
     assert r.json()["errors"], "AC-059: the 422 carries no field-level message"
-    assert all(
-        t["name"] != body["name"] for t in _list(client)
-    ), "AC-059: a template was stored despite the 422"
+    assert all(t["name"] != body["name"] for t in _list(client)), (
+        "AC-059: a template was stored despite the 422"
+    )
 
 
 def test_ac059_a_question_needs_text(client):
@@ -433,9 +433,9 @@ def test_ac061_editing_a_published_template_never_destroys_the_earlier_wording(c
         },
         headers=H,
     )
-    assert (
-        _count("SELECT count(*) FROM question WHERE text = 'Keep me?'") == 1
-    ), "NFR-010: the published wording was overwritten in place"
+    assert _count("SELECT count(*) FROM question WHERE text = 'Keep me?'") == 1, (
+        "NFR-010: the published wording was overwritten in place"
+    )
 
 
 # --------------------------------------------------------------------- AC-062
@@ -449,9 +449,9 @@ def test_ac062_publishing_without_questions_is_422_and_the_template_stays_unpubl
     r = _publish(client, empty["id"])
     assert r.status_code == 422, r.text
     messages = list(r.json().get("errors", {}).values()) or [r.json().get("detail")]
-    assert "At least one question is required." in [
-        str(m) for m in messages
-    ], f"AC-062: the message was {messages!r}"
+    assert "At least one question is required." in [str(m) for m in messages], (
+        f"AC-062: the message was {messages!r}"
+    )
     assert _get_template(client, empty["id"])["status"] == "draft"
     assert _row(_list(client, status="published"), empty["id"]) is None
 
