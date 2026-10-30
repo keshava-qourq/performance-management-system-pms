@@ -5,7 +5,7 @@
 <!-- sdlc:auto:start overview -->
 Build a Performance management System
 
-**Documentation version:** v10
+**Documentation version:** v11
 <!-- sdlc:auto:end overview -->
 
 ## Contents
@@ -15,7 +15,7 @@ Build a Performance management System
 |---|---|
 | [Requirements](requirements/README.md) | v1 approved |
 | [Architecture](architecture/README.md) | 47 entries |
-| [Development](development/README.md) | 22 entries |
+| [Development](development/README.md) | 23 entries |
 | [Testing](testing/README.md) | 1 entry |
 | [Deployment](deployment/README.md) | 3 entries |
 | [Maintenance](maintenance/README.md) | 1 entry |
@@ -24,14 +24,14 @@ Build a Performance management System
 | [Decisions (ADRs)](architecture/adr/README.md) | 6 decisions |
 | [Sprint plan](development/sprint-plan.md) | 8 sprints |
 | [Developer guide](development/developer-guide.md) | generated |
-| [API reference](development/api-reference.md) | 27 routes |
+| [API reference](development/api-reference.md) | 36 routes |
 | [Test report](testing/test-report.md) | not run yet |
 | [Tests](testing/test-cases.md) | 0 tests |
 | [Deployment guide](deployment/deployment-guide.md) | deployed |
 | [Runbook](deployment/runbook.md) | deployed |
-| [Release notes](deployment/release-notes.md) | 4 releases |
+| [Release notes](deployment/release-notes.md) | 5 releases |
 | [Traceability matrix](traceability-matrix.md) | 35 requirements |
-| [Changelog](CHANGELOG.md) | 10 versions |
+| [Changelog](CHANGELOG.md) | 11 versions |
 <!-- sdlc:auto:end contents -->
 
 ## Open gaps
@@ -169,37 +169,44 @@ Build a Performance management System
 
 ### Development
 
-- No approval date or approver is recorded for the plan.
-- The plan gives no explicit story-to-sprint assignment. Sprint contents can only be inferred from goal wording.
-- Sub-tasks have no point estimates.
-- No ticket outcomes are recorded for any story matching this sprint's goal.
+- Plan approver and approval date are not recorded.
+- The plan does not explicitly map stories to sprints. The sprint-to-story links in the SPRINT entries are inferred from sprint goal text.
+- Sub-tasks (US-010-T*, US-016-T*, US-017-T*) have no point estimates.
+- No delivery record exists for any Sprint 1 story in the development run.
 - Sprint dates are not provided.
-- US-010 (authorisation) was skipped, so the sprint goal of server-side role and reporting-line authorisation is not met according to the recorded outcomes.
-- US-032 (English-only interface) does not clearly appear in any sprint goal.
-- No ticket, commit or status is recorded for US-001 to US-005.
-- Delivered features (profile, goals) presumably depend on employee records and reporting lines. Whether those prerequisites exist in code is not documented.
-- No outcome is recorded for US-006, US-007 or US-008. It is unclear how users sign in to reach the delivered profile and goals features.
-- US-010 was skipped and no reason is given.
-- No status is recorded for US-010 sub-tasks T1 to T3.
-- No ticket, commit or status is recorded for US-013, US-014 or US-015.
-- No ticket, commit or status is recorded for US-016 to US-020 or their sub-tasks.
-- No ticket, commit or status is recorded for US-021 to US-024.
-- No ticket, commit or status is recorded for US-025 to US-028.
-- No ticket, commit or status is recorded for US-029 to US-031.
-- No ticket, commit or status is recorded for US-032 to US-035.
-- No evidence is recorded that the Sprint 1 EU environment, encryption and backups (US-035) were provisioned.
-- Discrepancy: the run status says 'completed', but 31 of 35 planned stories have no ticket record. It is unclear whether the run covered only Sprint 3 scope or whether outcomes are missing.
-- No run dates, reviewer or code-review approval are recorded.
-- No test or CI results are attached to the delivered commit.
-- No implementation details, acceptance verification or review approval are recorded.
-- It is delivered while US-010 (server-side authorisation) was skipped. Access controls on profile data are unverified.
-- The sign-in story it depends on (US-007) has no recorded outcome.
-- No reason for skipping is recorded.
-- No status is recorded for sub-tasks T1 to T3.
-- No re-plan or target sprint is recorded.
-- Delivered features (US-009, US-011, US-012) and future manager or HR features depend on this authorisation layer.
-- Authorisation enforcement (US-010) was skipped, so goal ownership checks are unverified.
-- Authorisation enforcement (US-010) was skipped, so edit permissions on goals are unverified.
+- The story mapping is inferred from the goal text, not stated in the plan.
+- No delivery record exists for any Sprint 2 story.
+- The story mapping is inferred from the goal text.
+- No delivery record exists for any Sprint 3 story or task.
+- Sprint 4 deliveries (goal alignment, manager team view) appear to depend on this sprint's personal goals and authorisation work. Their delivery status is unknown.
+- The inferred story load (21 pts) exceeds sprint capacity (20). Confirm the sprint scope or the capacity.
+- The run does not state which sprint it executed. The link to Sprint 4 is inferred from matching scope.
+- No delivery record exists for any Sprint 5 story or task.
+- No delivery record exists for any Sprint 6 story or task.
+- No delivery record exists for any Sprint 7 story.
+- US-032 (English-only interface, 1 pt, frontend-agent) is not referenced by any sprint goal. Its sprint assignment is unknown.
+- No delivery record exists for Sprint 8 stories.
+- No ticket or commit is recorded for any story in this epic.
+- Delivered US-015 (manager team view) and US-024 appear to rely on reporting lines (US-003) and roles (US-004).
+- No ticket or commit is recorded for any story or task in this epic.
+- It is unconfirmed how the delivered stories (US-013, US-014, US-015, US-021, US-024) enforce access without a recorded US-010 delivery.
+- US-011 and US-012 have no delivery record. Goal alignment (US-013) and the manager goals view (US-015) presuppose personal goals exist.
+- The visibility setting (US-024) is delivered, but constructive feedback (US-022) and the feedback lists (US-023) are not. It is unclear what the setting currently governs.
+- No user-facing list for viewing praise is recorded as delivered, because US-023 is not reported.
+- The EU environment, encryption and backups (US-035, Sprint 1 goal) are unconfirmed. The delivered features have no recorded hosting or data-protection baseline.
+- Discrepancy: the run status is 'completed', but only 5 of 35 planned stories have tickets. It is unclear whether 'completed' refers to one sprint (apparently Sprint 4) or to the whole plan.
+- Earlier-sprint prerequisites (sign-in, roles, reporting lines, authorisation, personal goals) have no delivery record. It is unknown whether they exist in other runs or were not built.
+- Run date, branch or repository, reviewers and merge approvals are not provided.
+- No test results, code review outcomes or build/CI status are provided for the delivered commits.
+- Because end-to-end delivery of the application is not confirmed, no user guide can be produced yet.
+- No implementation notes, acceptance results or tests are recorded.
+- Personal goal creation (US-011) has no delivery record, so it is unconfirmed what goals can be aligned.
+- One commit covers two tickets (US-013 and US-014). Per-ticket change scope cannot be separated from the input.
+- The HR role (US-004) and departments (US-002) have no delivery records. HR-only restriction is unconfirmed.
+- Reporting lines (US-003) and reporting-line scope authorisation (US-010, US-010-T2) have no delivery records. Correct scoping of the manager view is unverified.
+- The planned feedback lists (US-023) are not delivered, so there is no recorded way to view praise once given.
+- Constructive feedback (US-022) and the feedback lists (US-023) are not delivered. It is unclear whether the setting currently applies to praise only.
+- The setting's options and default value are not documented in the input.
 
 ### Testing
 

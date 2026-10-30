@@ -3,6 +3,17 @@
 > Maintained by QuorQ AI SDLC. Text between `sdlc:auto` markers is regenerated; anything outside them is yours and is kept.
 
 <!-- sdlc:auto:start releases -->
+## 33e15d734bf2 — 2026-10-30
+
+**Commit:** `33e15d7`
+
+**Delivered:**
+- US-013: Align a goal to a parent company or department goal
+- US-014: HR maintains company and department goals
+- US-015: Manager oversees goals across their reporting line
+- US-021: Give praise to a colleague
+- US-024: HR configures manager visibility of feedback
+
 ## 498f20bea4d5 — 2026-10-30
 
 **Commit:** `498f20b`

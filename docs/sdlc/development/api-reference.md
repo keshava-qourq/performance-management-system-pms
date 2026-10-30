@@ -11,27 +11,36 @@
 | POST | /auth/password | change_password | `backend/app/routers/auth.py:106` | — |
 | GET | /auth/tokens/{token} | check_token | `backend/app/routers/auth.py:139` | — |
 | POST | /auth/tokens/{token}/accept | accept_token | `backend/app/routers/auth.py:147` | Set a password from an invitation or reset link. Single-use (NFR-005). |
-| GET | /departments | list_departments | `backend/app/routers/employees.py:392` | — |
-| GET | /employees | list_employees | `backend/app/routers/employees.py:123` | The directory. Pickers for new goals, feedback and 1:1s pass active_only. |
-| POST | /employees | create_employee | `backend/app/routers/employees.py:132` | — |
-| PATCH | /employees/{employee_id} | update_employee | `backend/app/routers/employees.py:149` | — |
-| POST | /employees/{employee_id}/deactivate | deactivate | `backend/app/routers/employees.py:225` | — |
-| DELETE | /employees/{employee_id}/invitations | revoke_invitation | `backend/app/routers/employees.py:320` | — |
-| POST | /employees/{employee_id}/invitations | issue_invitation | `backend/app/routers/employees.py:292` | — |
-| PUT | /employees/{employee_id}/manager | set_manager | `backend/app/routers/employees.py:187` | — |
-| POST | /employees/{employee_id}/password-resets | issue_password_reset | `backend/app/routers/employees.py:344` | — |
-| GET | /employees/{employee_id}/record | employee_record | `backend/app/routers/employees.py:369` | — |
-| GET | /goals | list_goals | `backend/app/routers/goals.py:127` | — |
-| POST | /goals | create_goal | `backend/app/routers/goals.py:156` | — |
-| DELETE | /goals/{goal_id} | delete_goal | `backend/app/routers/goals.py:334` | Soft-delete; blocked while child goals are aligned to it. |
-| GET | /goals/{goal_id} | get_goal | `backend/app/routers/goals.py:199` | — |
-| PATCH | /goals/{goal_id} | update_goal | `backend/app/routers/goals.py:234` | — |
-| POST | /goals/{goal_id}/progress | record_progress | `backend/app/routers/goals.py:288` | — |
-| GET | /health | health | `backend/app/main.py:66` | Liveness probe. |
-| GET | /job-titles | list_job_titles | `backend/app/routers/employees.py:398` | — |
+| GET | /departments | list_departments | `backend/app/routers/employees.py:436` | — |
+| GET | /employees | list_employees | `backend/app/routers/employees.py:123` | — |
+| POST | /employees | create_employee | `backend/app/routers/employees.py:161` | — |
+| PATCH | /employees/{employee_id} | update_employee | `backend/app/routers/employees.py:178` | — |
+| POST | /employees/{employee_id}/deactivate | deactivate | `backend/app/routers/employees.py:254` | — |
+| DELETE | /employees/{employee_id}/invitations | revoke_invitation | `backend/app/routers/employees.py:349` | — |
+| POST | /employees/{employee_id}/invitations | issue_invitation | `backend/app/routers/employees.py:321` | — |
+| PUT | /employees/{employee_id}/manager | set_manager | `backend/app/routers/employees.py:216` | — |
+| POST | /employees/{employee_id}/password-resets | issue_password_reset | `backend/app/routers/employees.py:373` | — |
+| GET | /employees/{employee_id}/record | employee_record | `backend/app/routers/employees.py:398` | — |
+| GET | /feedback | list_feedback | `backend/app/routers/feedback.py:101` | — |
+| POST | /feedback | send_feedback | `backend/app/routers/feedback.py:49` | — |
+| GET | /feedback/audience | audience | `backend/app/routers/feedback.py:80` | — |
+| GET | /goals | list_goals | `backend/app/routers/goals.py:295` | — |
+| POST | /goals | create_goal | `backend/app/routers/goals.py:324` | — |
+| GET | /goals/parent-options | parent_options | `backend/app/routers/goals.py:288` | — |
+| DELETE | /goals/{goal_id} | delete_goal | `backend/app/routers/goals.py:541` | Soft-delete; blocked while child goals are aligned to it. |
+| GET | /goals/{goal_id} | get_goal | `backend/app/routers/goals.py:375` | — |
+| PATCH | /goals/{goal_id} | update_goal | `backend/app/routers/goals.py:422` | — |
+| POST | /goals/{goal_id}/comments | add_comment | `backend/app/routers/goals.py:264` | — |
+| POST | /goals/{goal_id}/progress | record_progress | `backend/app/routers/goals.py:495` | — |
+| GET | /health | health | `backend/app/main.py:70` | Liveness probe. |
+| GET | /job-titles | list_job_titles | `backend/app/routers/employees.py:442` | — |
+| GET | /me/dashboard | dashboard | `backend/app/routers/feedback.py:112` | — |
 | GET | /me/profile | get_profile | `backend/app/routers/profile.py:77` | — |
 | PATCH | /me/profile | update_profile | `backend/app/routers/profile.py:82` | — |
 | PUT | /me/profile/photo | upload_photo | `backend/app/routers/profile.py:115` | — |
+| GET | /settings | get_settings | `backend/app/routers/settings.py:35` | — |
+| PUT | /settings | put_settings | `backend/app/routers/settings.py:40` | — |
+| GET | /team/goals | team_goals | `backend/app/routers/goals.py:217` | Active direct reports with their goals, loaded in two queries. |
 <!-- sdlc:auto:end endpoints -->
 
 <!-- sdlc:auto:start drift -->
@@ -42,11 +51,7 @@
 - DELETE /review-periods/{id}/participants/{employee_id}
 - GET /audit-events
 - GET /employees/{id}/record
-- GET /feedback
-- GET /feedback/audience
-- GET /goals/parent-options
 - GET /goals/{id}
-- GET /me/dashboard
 - GET /me/record
 - GET /one-on-ones
 - GET /one-on-ones/{id}
@@ -54,8 +59,6 @@
 - GET /review-periods/{id}/status
 - GET /self-reviews/{id}
 - GET /self-reviews/{id}/history
-- GET /settings
-- GET /team/goals
 - PATCH /employees/{id}
 - PATCH /goals/{id}
 - PATCH /one-on-ones/{id}
@@ -63,7 +66,6 @@
 - POST /employees/{id}/deactivate
 - POST /employees/{id}/invitations
 - POST /employees/{id}/password-resets
-- POST /feedback
 - POST /feedback/{id}/withdraw
 - POST /goals/{id}/comments
 - POST /goals/{id}/progress
@@ -94,10 +96,12 @@
 - POST /employees/{employee_id}/deactivate
 - POST /employees/{employee_id}/invitations
 - POST /employees/{employee_id}/password-resets
+- POST /goals/{goal_id}/comments
 - POST /goals/{goal_id}/progress
 - PUT /employees/{employee_id}/manager
+- PUT /settings
 <!-- sdlc:auto:end drift -->
 
 <!-- sdlc:auto:start source -->
-Generated from commit `498f20b`
+Generated from commit `33e15d7`
 <!-- sdlc:auto:end source -->
