@@ -14,7 +14,7 @@ Push to `main` to run `.github/workflows/deploy.yml`, or start a deployment from
 <!-- sdlc:auto:start rollback -->
 Redeploy the last good version from the platform's Deployment tab, or revert the offending commit on `main` — the workflow redeploys.
 
-**Last live version:** 66559e219ee3 (`66559e2`)
+**Last live version:** 498f20bea4d5 (`498f20b`)
 <!-- sdlc:auto:end rollback -->
 
 <!-- sdlc:auto:start recent-failures -->

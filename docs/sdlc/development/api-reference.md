@@ -5,15 +5,33 @@
 <!-- sdlc:auto:start endpoints -->
 | Method | Path | Handler | Source | Summary |
 |---|---|---|---|---|
-| POST | /auth/login | login | `backend/app/routers/auth.py:31` | — |
-| POST | /auth/logout | logout | `backend/app/routers/auth.py:72` | — |
-| GET | /auth/me | me | `backend/app/routers/auth.py:85` | — |
-| GET | /departments | list_departments | `backend/app/routers/employees.py:128` | — |
-| GET | /employees | list_employees | `backend/app/routers/employees.py:79` | — |
-| POST | /employees | create_employee | `backend/app/routers/employees.py:85` | — |
-| PATCH | /employees/{employee_id} | update_employee | `backend/app/routers/employees.py:102` | — |
-| GET | /health | health | `backend/app/main.py:65` | Liveness probe, and the only route here that is not a stub. |
-| GET | /job-titles | list_job_titles | `backend/app/routers/employees.py:134` | — |
+| POST | /auth/login | login | `backend/app/routers/auth.py:32` | — |
+| POST | /auth/logout | logout | `backend/app/routers/auth.py:73` | — |
+| GET | /auth/me | me | `backend/app/routers/auth.py:180` | — |
+| POST | /auth/password | change_password | `backend/app/routers/auth.py:106` | — |
+| GET | /auth/tokens/{token} | check_token | `backend/app/routers/auth.py:139` | — |
+| POST | /auth/tokens/{token}/accept | accept_token | `backend/app/routers/auth.py:147` | Set a password from an invitation or reset link. Single-use (NFR-005). |
+| GET | /departments | list_departments | `backend/app/routers/employees.py:392` | — |
+| GET | /employees | list_employees | `backend/app/routers/employees.py:123` | The directory. Pickers for new goals, feedback and 1:1s pass active_only. |
+| POST | /employees | create_employee | `backend/app/routers/employees.py:132` | — |
+| PATCH | /employees/{employee_id} | update_employee | `backend/app/routers/employees.py:149` | — |
+| POST | /employees/{employee_id}/deactivate | deactivate | `backend/app/routers/employees.py:225` | — |
+| DELETE | /employees/{employee_id}/invitations | revoke_invitation | `backend/app/routers/employees.py:320` | — |
+| POST | /employees/{employee_id}/invitations | issue_invitation | `backend/app/routers/employees.py:292` | — |
+| PUT | /employees/{employee_id}/manager | set_manager | `backend/app/routers/employees.py:187` | — |
+| POST | /employees/{employee_id}/password-resets | issue_password_reset | `backend/app/routers/employees.py:344` | — |
+| GET | /employees/{employee_id}/record | employee_record | `backend/app/routers/employees.py:369` | — |
+| GET | /goals | list_goals | `backend/app/routers/goals.py:127` | — |
+| POST | /goals | create_goal | `backend/app/routers/goals.py:156` | — |
+| DELETE | /goals/{goal_id} | delete_goal | `backend/app/routers/goals.py:334` | Soft-delete; blocked while child goals are aligned to it. |
+| GET | /goals/{goal_id} | get_goal | `backend/app/routers/goals.py:199` | — |
+| PATCH | /goals/{goal_id} | update_goal | `backend/app/routers/goals.py:234` | — |
+| POST | /goals/{goal_id}/progress | record_progress | `backend/app/routers/goals.py:288` | — |
+| GET | /health | health | `backend/app/main.py:66` | Liveness probe. |
+| GET | /job-titles | list_job_titles | `backend/app/routers/employees.py:398` | — |
+| GET | /me/profile | get_profile | `backend/app/routers/profile.py:77` | — |
+| PATCH | /me/profile | update_profile | `backend/app/routers/profile.py:82` | — |
+| PUT | /me/profile/photo | upload_photo | `backend/app/routers/profile.py:115` | — |
 <!-- sdlc:auto:end endpoints -->
 
 <!-- sdlc:auto:start drift -->
@@ -23,15 +41,12 @@
 - DELETE /goals/{id}
 - DELETE /review-periods/{id}/participants/{employee_id}
 - GET /audit-events
-- GET /auth/tokens/{token}
 - GET /employees/{id}/record
 - GET /feedback
 - GET /feedback/audience
-- GET /goals
 - GET /goals/parent-options
 - GET /goals/{id}
 - GET /me/dashboard
-- GET /me/profile
 - GET /me/record
 - GET /one-on-ones
 - GET /one-on-ones/{id}
@@ -43,17 +58,13 @@
 - GET /team/goals
 - PATCH /employees/{id}
 - PATCH /goals/{id}
-- PATCH /me/profile
 - PATCH /one-on-ones/{id}
 - POST /action-items/{id}/complete
-- POST /auth/password
-- POST /auth/tokens/{token}/accept
 - POST /employees/{id}/deactivate
 - POST /employees/{id}/invitations
 - POST /employees/{id}/password-resets
 - POST /feedback
 - POST /feedback/{id}/withdraw
-- POST /goals
 - POST /goals/{id}/comments
 - POST /goals/{id}/progress
 - POST /one-on-ones
@@ -68,16 +79,25 @@
 - POST /self-reviews/{id}/reopen
 - POST /self-reviews/{id}/submit
 - PUT /employees/{id}/manager
-- PUT /me/profile/photo
 - PUT /one-on-ones/{id}/private-note
 - PUT /one-on-ones/{id}/talking-points/order
 - PUT /self-reviews/{id}/answers
 
 **Code only:**
 
+- DELETE /employees/{employee_id}/invitations
+- DELETE /goals/{goal_id}
+- GET /employees/{employee_id}/record
+- GET /goals/{goal_id}
 - PATCH /employees/{employee_id}
+- PATCH /goals/{goal_id}
+- POST /employees/{employee_id}/deactivate
+- POST /employees/{employee_id}/invitations
+- POST /employees/{employee_id}/password-resets
+- POST /goals/{goal_id}/progress
+- PUT /employees/{employee_id}/manager
 <!-- sdlc:auto:end drift -->
 
 <!-- sdlc:auto:start source -->
-Generated from commit `66559e2`
+Generated from commit `498f20b`
 <!-- sdlc:auto:end source -->
