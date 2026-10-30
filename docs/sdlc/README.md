@@ -5,7 +5,7 @@
 <!-- sdlc:auto:start overview -->
 Build a Performance management System
 
-**Documentation version:** v11
+**Documentation version:** v12
 <!-- sdlc:auto:end overview -->
 
 ## Contents
@@ -31,7 +31,7 @@ Build a Performance management System
 | [Runbook](deployment/runbook.md) | deployed |
 | [Release notes](deployment/release-notes.md) | 5 releases |
 | [Traceability matrix](traceability-matrix.md) | 35 requirements |
-| [Changelog](CHANGELOG.md) | 11 versions |
+| [Changelog](CHANGELOG.md) | 12 versions |
 <!-- sdlc:auto:end contents -->
 
 ## Open gaps
@@ -221,20 +221,20 @@ Build a Performance management System
 ### Deployment
 
 - No deployment date or timestamp recorded.
-- No record of who performed or approved the deployment.
-- No release approval or go/no-go decision recorded.
-- Target environment is not named (production, staging, or demo); 'live' is the only status given.
-- No release notes or changelog stating which requirements (US-001 to US-035) or tickets this version includes, so it cannot be traced to requirements.
-- No pre- or post-deployment verification recorded (smoke tests, health checks, test sign-off).
+- No deployer or release approver recorded. Document status is left as 'draft' because no approval is on record.
+- Target environment is not labelled (e.g. production, staging, or demo). 'Live' alone does not establish that this is production.
+- No mapping from this release to requirement keys (US-001 to US-035). It is unknown which user stories are included in version 33e15d734bf2.
+- No post-deployment verification, smoke-test, or health-check results provided.
 - No rollback plan or previous version recorded.
-- Version 498f20bea4d5 is not linked to a specific source commit, branch, or build pipeline run in the input.
-- No custom or branded domain recorded; the app is on the default Amplify subdomain.
+- No release notes or changelog provided for this version.
+- The format of the version identifier is not described. It may be a commit hash or build id, but this is not confirmed.
+- No custom or production domain recorded. Only the platform-generated URL is given.
 - No confirmation that the frontend is configured to call the recorded backend URL.
-- No record of frontend availability or health verification after deployment.
-- The backend is addressed through an IP-encoded wildcard DNS hostname (sslip.io) rather than a dedicated domain. Whether this is acceptable for the stated environment is not documented and needs human review.
-- No backend health-check, API smoke-test, or monitoring results recorded.
-- No database, data migration, or configuration/secrets deployment steps recorded.
-- Hosting platform, scaling, and backup arrangements are not documented.
+- Hosting platform, region, and build configuration are not stated in the input.
+- The backend is addressed through a raw-IP wildcard DNS name (sslip.io), not a stable domain. It is unclear whether this is the intended long-term endpoint. Confirm DNS and TLS certificate ownership before treating it as production.
+- No infrastructure details recorded: host type, region, scaling, or database.
+- No API health-check or verification result recorded for this endpoint.
+- No record of secrets or configuration management, monitoring, logging, or backup arrangements for the backend.
 
 ### Maintenance
 
