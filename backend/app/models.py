@@ -44,6 +44,10 @@ class Employee(Base):
     leaving_date: Mapped[date | None] = mapped_column(Date)
     deactivated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     password_hash: Mapped[str | None] = mapped_column(String)
+    # Self-service profile fields (US-009): the employee owns these, HR owns the rest.
+    display_name: Mapped[str | None] = mapped_column(String(200))
+    pronouns: Mapped[str | None] = mapped_column(String(40))
+    photo_key: Mapped[str | None] = mapped_column(String(300))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 

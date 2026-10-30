@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app import auth, tokens
 from app.database import get_db
 from app.models import AuditEvent, Department, Employee, JobTitle
+from app.routers import profile
 
 router = APIRouter(tags=["employees"])
 hr_admin = auth.require_role("hr_admin")
@@ -41,6 +42,9 @@ def _out(db: Session, e: Employee) -> dict:
         "job_title": {"id": str(title.id), "name": title.name} if title else None,
         "department": {"id": str(dept.id), "name": dept.name} if dept else None,
         "manager": _brief(manager),
+        "display_name": e.display_name,
+        "pronouns": e.pronouns,
+        "photo_url": profile.photo_url(e),
         "missing_manager": e.manager_id is None,
         "role": e.role,
         "status": e.status,
