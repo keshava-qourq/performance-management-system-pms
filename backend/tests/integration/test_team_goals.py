@@ -17,7 +17,7 @@ FUTURE = (date.today() + timedelta(days=30)).isoformat()
 
 
 @pytest.fixture(autouse=True)
-def _clean():
+def _clean_team_goals():
     yield
     with SessionLocal() as db:
         db.execute(text("DELETE FROM goal_comment"))
