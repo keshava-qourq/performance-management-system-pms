@@ -15,6 +15,7 @@ from app import auth
 from app.config import ALLOWED_ORIGINS
 from app.routers import auth as auth_router
 from app.routers import employees as employees_router
+from app.routers import goals as goals_router
 from app.services import configured_services
 
 app = FastAPI(
@@ -27,6 +28,7 @@ app.add_exception_handler(auth.PolicyRefusal, auth.refusal_response)
 app.add_exception_handler(auth.Unauthenticated, auth.unauthenticated_response)
 app.include_router(auth_router.router)
 app.include_router(employees_router.router)
+app.include_router(goals_router.router)
 
 
 @app.exception_handler(RequestValidationError)
