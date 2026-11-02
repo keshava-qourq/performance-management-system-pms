@@ -227,7 +227,9 @@ describe("Employee self-review", () => {
     expect(
       await screen.findByText(/2 required questions are still unanswered/),
     ).toBeInTheDocument();
-    expect(screen.getByText("Choose a rating and write a comment before submitting.")).toBeVisible();
+    expect(
+      screen.getByText("Choose a rating and write a comment before submitting."),
+    ).toBeVisible();
     expect(screen.getByText("Choose a rating before submitting.")).toBeVisible();
     // Nothing was submitted and no confirmation was offered.
     expect(fn.mock.calls.some(([u]) => String(u).endsWith("/submit"))).toBe(false);
