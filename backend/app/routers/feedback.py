@@ -152,12 +152,22 @@ def dashboard(db: Session = Depends(get_db), caller: Employee = Depends(auth.cur
     from app.routers.one_on_ones import open_action_items  # avoids a circular import
 
     items = open_action_items(db, caller)
+    overdue = [i for i in items if i["overdue"]]
     return {
         "action_items": items,
-        "overdue_action_items": [i for i in items if i["overdue"]],
+        "overdue_action_items": overdue,
         "goals": [_goal_out(db, g) for g in goals],
         "feedback": [_out(db, f) for f in _list(db, caller, "received")],
         "unread_feedback": unread,
         "reviews": reviews,
-        "attention": [],
+        # "Needs your attention": overdue 1:1 action items the caller owns (AC-102).
+        "attention": [
+            {
+                "type": "action_item",
+                "id": i["id"],
+                "description": i["description"],
+                "due_date": i["due_date"],
+            }
+            for i in overdue
+        ],
     }

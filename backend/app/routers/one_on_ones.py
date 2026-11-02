@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from app import auth
 from app.database import get_db
-from app.models import ActionItem, Employee, OneOnOne
+from app.models import ActionItem, AuditEvent, Employee, OneOnOne
 from app.routers.employees import _brief, _invalid
 
 router = APIRouter(tags=["one-on-ones"])
@@ -37,6 +37,24 @@ class ActionItemIn(BaseModel):
     description: str | None = None
     owner_id: uuid.UUID | None = None
     due_date: str | None = None
+
+
+class PrivateNoteIn(BaseModel):
+    body: str | None = None
+
+
+NOTE_SETTING = "hr_private_notes_visible"
+NOTE_READERS_OFF = "Only you, the manager, can read this private note."
+NOTE_READERS_ON = "Only you, the manager, and HR Admins can read this private note."
+
+
+def _hr_may_read(db: Session) -> bool:
+    """Visibility is a stored system setting, never a constant here (NFR-020)."""
+    return auth.get_setting(db, NOTE_SETTING) is True
+
+
+def _readers_statement(hr_may_read: bool) -> str:
+    return NOTE_READERS_ON if hr_may_read else NOTE_READERS_OFF
 
 
 def _parse(raw) -> date | None:
@@ -61,9 +79,7 @@ def _item_out(db: Session, item: ActionItem, meeting: OneOnOne | None = None) ->
         "due_date": item.due_date.isoformat(),
         "overdue": _overdue(item),
         "completed_at": item.completed_at.isoformat() if item.completed_at else None,
-        "completed_by": _brief(
-            db.get(Employee, item.completed_by) if item.completed_by else None
-        ),
+        "completed_by": _brief(db.get(Employee, item.completed_by) if item.completed_by else None),
     }
 
 
@@ -115,11 +131,15 @@ def _summary(db: Session, meeting: OneOnOne, caller: Employee) -> dict:
 
 
 def open_action_items(db: Session, caller: Employee) -> list[dict]:
-    """Every still-open item on the caller's 1:1s, flagged overdue (AC-102)."""
+    """Every still-open item the caller owns, flagged overdue (AC-100, AC-102)."""
     rows = db.execute(
         select(ActionItem, OneOnOne)
         .join(OneOnOne, OneOnOne.id == ActionItem.one_on_one_id)
-        .where(_mine(caller), ActionItem.completed_at.is_(None))
+        .where(
+            _mine(caller),
+            ActionItem.owner_id == caller.id,
+            ActionItem.completed_at.is_(None),
+        )
         .order_by(ActionItem.due_date)
     ).all()
     return [_item_out(db, item, meeting) for item, meeting in rows]
@@ -195,12 +215,20 @@ def _carry_over(db: Session, meeting: OneOnOne) -> list[dict]:
 
 
 def _detail(db: Session, meeting: OneOnOne, caller: Employee) -> dict:
+    """The private note is serialised only for the manager, and for an HR Admin
+    while the stored setting allows it. The direct report never sees it (NFR-007)."""
+    hr_may_read = _hr_may_read(db)
+    is_manager = meeting.manager_id == caller.id
+    may_read_note = is_manager or (caller.role == "hr_admin" and hr_may_read)
     return {
         **_summary(db, meeting, caller),
         "updated_at": meeting.updated_at.isoformat() if meeting.updated_at else None,
         "talking_points": [],
         "action_items": [_item_out(db, i, meeting) for i in _items(db, meeting.id)],
         "carry_over": _carry_over(db, meeting),
+        "private_note": meeting.private_note if may_read_note else None,
+        "hr_can_read_private_notes": hr_may_read,
+        "private_note_readers": _readers_statement(hr_may_read),
     }
 
 
@@ -210,10 +238,14 @@ def get_one_on_one(
     db: Session = Depends(get_db),
     caller: Employee = Depends(auth.current_employee),
 ):
-    try:
-        meeting = _load(db, one_on_one_id, caller)
-    except _NotFound:
+    meeting = db.get(OneOnOne, one_on_one_id)
+    if meeting is None:
         return Response(status_code=404)
+    # The two participants always; an HR Admin only while the setting allows it (AC-106).
+    if not _is_participant(meeting, caller) and not (
+        caller.role == "hr_admin" and _hr_may_read(db)
+    ):
+        raise auth.PolicyRefusal
     return _detail(db, meeting, caller)
 
 
@@ -239,6 +271,39 @@ def update_one_on_one(
     meeting.updated_at = datetime.now(UTC)
     db.commit()
     return _detail(db, meeting, caller)
+
+
+@router.put("/one-on-ones/{one_on_one_id}/private-note")
+def save_private_note(
+    one_on_one_id: uuid.UUID,
+    body: PrivateNoteIn,
+    db: Session = Depends(get_db),
+    caller: Employee = mutator,
+):
+    """Only the manager on this 1:1 may write it; the report is refused (AC-104, AC-105)."""
+    meeting = db.get(OneOnOne, one_on_one_id)
+    if meeting is None:
+        return Response(status_code=404)
+    if meeting.manager_id != caller.id:
+        raise auth.PolicyRefusal
+    meeting.private_note = (body.body or "").strip() or None
+    meeting.updated_at = datetime.now(UTC)
+    db.add(
+        AuditEvent(
+            actor_id=caller.id,
+            action="private_note_saved",
+            entity_type="one_on_one",
+            entity_id=meeting.id,
+            subject_employee_id=meeting.report_id,
+        )
+    )
+    db.commit()
+    hr_may_read = _hr_may_read(db)
+    return {
+        "id": str(meeting.id),
+        "hr_can_read_private_notes": hr_may_read,
+        "private_note_readers": _readers_statement(hr_may_read),
+    }
 
 
 @router.post("/one-on-ones/{one_on_one_id}/action-items", status_code=201)
