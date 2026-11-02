@@ -19,6 +19,7 @@ import {
   useReviewPeriods,
   useUpdateReviewPeriod,
 } from "@/lib/reviews";
+import SelfReviewSection from "./SelfReview";
 
 const { Label, Select, Separator } = UI;
 
@@ -495,9 +496,6 @@ export default function Screen() {
   const removeParticipantCall = useRemoveParticipant();
   const todayIso = new Date().toISOString().slice(0, 10);
 
-  const [errors, setErrors] = React.useState({});
-  const [msg, setMsg] = React.useState(null);
-  const [confirming, setConfirming] = React.useState(false);
   const [mgrSel, setMgrSel] = React.useState(null);
   const [outsideId, setOutsideId] = React.useState("e6");
   const [outsideMsg, setOutsideMsg] = React.useState(null);
@@ -540,81 +538,14 @@ export default function Screen() {
 
   const tplById = (id) => templates.find((t) => t.id === id);
   const scaleById = (id) => scales.find((s) => s.id === id) || scales[0];
+  const setRev = (key, patch) =>
+    setReviews((r) => Object.assign({}, r, { [key]: Object.assign({}, r[key], patch) }));
+
   const liveSnap = (tid) => {
     const t = tplById(tid);
     return mkSnap(t, scaleById(t.scaleId));
   };
 
-  // The employee and manager sections still read the prototype's own period.
-  const myPeriod = PERIODS0.find((p) => p.status === "open" && p.participants.indexOf(MY_ID) > -1);
-  const myKey = myPeriod ? myPeriod.id + ":" + MY_ID : null;
-  const myRev = myKey ? reviews[myKey] : null;
-
-  const setRev = (key, patch) =>
-    setReviews((r) => Object.assign({}, r, { [key]: Object.assign({}, r[key], patch) }));
-
-  const changeAnswer = (qid, patch) => {
-    const cur = myRev.answers[qid] || { rating: null, comment: "" };
-    setRev(myKey, {
-      answers: Object.assign({}, myRev.answers, { [qid]: Object.assign({}, cur, patch) }),
-    });
-    setMsg(null);
-    if (errors[qid]) {
-      const n = Object.assign({}, errors);
-      delete n[qid];
-      setErrors(n);
-    }
-  };
-  const saveDraft = () => {
-    setRev(myKey, { status: "draft" });
-    setMsg({
-      tone: "ok",
-      text:
-        "Draft saved at " + NOW_LABEL + ". Your ratings and comments will be here when you return.",
-    });
-  };
-  const trySubmit = () => {
-    const snap = liveSnap(myPeriod.templateId);
-    const miss = {};
-    allQs(snap).forEach((q) => {
-      if (q.mandatory && !isAnswered(q, myRev.answers[q.id])) miss[q.id] = true;
-    });
-    setErrors(miss);
-    if (Object.keys(miss).length) {
-      setConfirming(false);
-      setMsg({
-        tone: "bad",
-        text:
-          "Submission blocked: " +
-          Object.keys(miss).length +
-          " required question" +
-          (Object.keys(miss).length > 1 ? "s are" : " is") +
-          " unanswered and highlighted below.",
-      });
-      return;
-    }
-    setMsg(null);
-    setConfirming(true);
-  };
-  const confirmSubmit = () => {
-    const snap = liveSnap(myPeriod.templateId);
-    const had = myRev.history.length > 0;
-    setRev(myKey, {
-      status: "submitted",
-      submittedAt: NOW_LABEL,
-      snapshot: snap,
-      history: myRev.history.concat([
-        {
-          action: had ? "Re-submitted" : "Submitted",
-          actor: PEOPLE[MY_ID].name,
-          reason: "",
-          at: NOW_LABEL,
-        },
-      ]),
-    });
-    setConfirming(false);
-    setMsg(null);
-  };
 
   /* HR: rating scale */
   const setPoints = (n) => {
@@ -866,20 +797,6 @@ export default function Screen() {
     });
   };
 
-  const statusPill = (r, deadline) => {
-    if (!r || r.status === "not_started")
-      return deadline < TODAY ? (
-        <Pill tone="bad">Overdue · not started</Pill>
-      ) : (
-        <Pill tone="muted">Not started</Pill>
-      );
-    if (r.status === "submitted") return <Pill tone="ok">Submitted</Pill>;
-    return deadline < TODAY ? (
-      <Pill tone="bad">Overdue · draft</Pill>
-    ) : (
-      <Pill tone="warn">Draft</Pill>
-    );
-  };
 
   const roleTabs = [
     { k: "employee", l: "Employee" },
@@ -898,12 +815,6 @@ export default function Screen() {
 
   const mgrKey = mgrSel ? "p1:" + mgrSel : null;
   const mgrRev = mgrKey ? reviews[mgrKey] : null;
-  const myDays = myPeriod
-    ? Math.round((new Date(myPeriod.deadline) - new Date(TODAY)) / 86400000)
-    : 0;
-  const mandTotal = myPeriod ? allQs(liveSnap(myPeriod.templateId)).filter((q) => q.mandatory) : [];
-  const mandDone =
-    myPeriod && myRev ? mandTotal.filter((q) => isAnswered(q, myRev.answers[q.id])).length : 0;
 
   return (
     <div
@@ -950,10 +861,7 @@ export default function Screen() {
               role="tab"
               aria-selected={role === t.k}
               type="button"
-              onClick={() => {
-                setRole(t.k);
-                setMsg(null);
-              }}
+              onClick={() => setRole(t.k)}
               className="px-4 min-h-11 text-sm rounded-md border focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8fae8b] hover:bg-white/5"
               style={{
                 borderColor: role === t.k ? C.accent : C.line,
@@ -966,133 +874,7 @@ export default function Screen() {
           ))}
         </div>
 
-        {role === "employee" &&
-          (!myPeriod ? (
-            <Panel>
-              <UI.Empty
-                title="No self-review is open for you"
-                description="When HR opens a review period that includes you, your self-review task will appear here and on your dashboard."
-              />
-            </Panel>
-          ) : (
-            <div>
-              <Panel
-                eyebrow="Your self-review task"
-                title={myPeriod.name}
-                action={statusPill(myRev, myPeriod.deadline)}
-              >
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                  <div>
-                    <div
-                      className="text-[11px] uppercase tracking-widest mb-1"
-                      style={{ color: C.muted }}
-                    >
-                      Questionnaire
-                    </div>
-                    <div className="text-sm">{liveSnap(myPeriod.templateId).name}</div>
-                  </div>
-                  <div>
-                    <div
-                      className="text-[11px] uppercase tracking-widest mb-1"
-                      style={{ color: C.muted }}
-                    >
-                      Submission deadline
-                    </div>
-                    <div className="text-sm">
-                      {fmt(myPeriod.deadline)}
-                      {myRev.status !== "submitted" && (
-                        <span style={{ color: myDays < 0 ? C.bad : C.muted }}>
-                          {" "}
-                          ·{" "}
-                          {myDays < 0 ? Math.abs(myDays) + " days overdue" : myDays + " days left"}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <div
-                      className="text-[11px] uppercase tracking-widest mb-1"
-                      style={{ color: C.muted }}
-                    >
-                      Required answered
-                    </div>
-                    <div className="text-2xl" style={Object.assign({}, HEAD, { color: C.accent })}>
-                      {myRev.status === "submitted" ? mandTotal.length : mandDone} /{" "}
-                      {mandTotal.length}
-                    </div>
-                  </div>
-                </div>
-              </Panel>
-
-              {myRev.status === "submitted" ? (
-                <div>
-                  <Notice tone="ok">
-                    Submitted by {PEOPLE[MY_ID].name} on {myRev.submittedAt}. This review is locked
-                    and read-only. If something needs correcting, ask HR to reopen it.
-                  </Notice>
-                  <Panel title="Your submitted answers">
-                    <ReviewBody snap={myRev.snapshot} answers={myRev.answers} editable={false} />
-                  </Panel>
-                  <Panel title="Review history">
-                    <HistoryList history={myRev.history} />
-                  </Panel>
-                </div>
-              ) : (
-                <div>
-                  {myDays < 0 && (
-                    <Notice tone="bad">
-                      This task is overdue. You can still submit unless HR has closed the period.
-                    </Notice>
-                  )}
-                  {myRev.history.length > 0 && (
-                    <Notice tone="warn">
-                      HR reopened this review for editing. Update your answers and submit again.
-                    </Notice>
-                  )}
-                  {msg && <Notice tone={msg.tone}>{msg.text}</Notice>}
-                  <Panel title="Your answers">
-                    <ReviewBody
-                      snap={liveSnap(myPeriod.templateId)}
-                      answers={myRev.answers}
-                      editable={true}
-                      onChange={changeAnswer}
-                      errors={errors}
-                    />
-                  </Panel>
-                  {confirming ? (
-                    <div
-                      className="rounded-md border p-5 mb-6"
-                      style={{ borderColor: C.accent, backgroundColor: C.surface }}
-                    >
-                      <h3 className="text-lg mb-2" style={HEAD}>
-                        Submit your self-review?
-                      </h3>
-                      <p className="text-sm mb-4" style={{ color: C.muted }}>
-                        Once submitted it is recorded with your name and a timestamp, and it can no
-                        longer be edited.
-                      </p>
-                      <div className="flex gap-3 flex-wrap">
-                        <Btn kind="primary" onClick={confirmSubmit}>
-                          <Icons.Check size={16} /> Confirm and submit
-                        </Btn>
-                        <Btn onClick={() => setConfirming(false)}>Keep editing</Btn>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex gap-3 flex-wrap mb-6">
-                      <Btn kind="primary" onClick={trySubmit}>
-                        <Icons.Check size={16} /> Submit self-review
-                      </Btn>
-                      <Btn onClick={saveDraft}>Save as draft</Btn>
-                    </div>
-                  )}
-                  <Panel title="Review history">
-                    <HistoryList history={myRev.history} />
-                  </Panel>
-                </div>
-              )}
-            </div>
-          ))}
+        {role === "employee" && <SelfReviewSection />}
 
         {role === "manager" && (
           <div>

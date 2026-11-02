@@ -8,6 +8,7 @@ import {
   apiFetch,
 } from "@/lib/api";
 import { FieldErrors, activeOnly, type Employee, type PersonRef } from "@/lib/employees";
+import { DASHBOARD_KEY } from "@/lib/feedback";
 
 // A review period exactly as the API returns it.
 export interface ReviewPeriod {
@@ -78,6 +79,184 @@ async function send<T>(path: string, method: string, body?: unknown): Promise<T>
   if (response.status === 422 && payload.errors) throw new FieldErrors(payload.errors);
   const text = payload.message ?? (typeof payload.detail === "string" ? payload.detail : "");
   throw new ApiError(response.status, text);
+}
+
+/* ---- The employee's own self-review task (US-018) ---- */
+
+// A rating scale point as the questionnaire snapshot carries it.
+export interface ScalePoint {
+  value: number;
+  label: string;
+}
+
+export interface SelfReviewQuestion {
+  id: string;
+  text: string;
+  type: string;
+  mandatory: boolean;
+  requires?: { rating?: boolean; comment?: boolean };
+  scale?: { points?: ScalePoint[]; labels?: ScalePoint[] } | null;
+}
+
+export interface SelfReviewCompetency {
+  id: string;
+  name: string;
+  questions: SelfReviewQuestion[];
+}
+
+// GET /self-reviews/{id}: the questionnaire (snapshot once submitted) and the
+// answers saved so far.
+export interface SelfReviewQuestionnaire {
+  name: string;
+  scale?: { points?: ScalePoint[]; labels?: ScalePoint[] } | null;
+  competencies: SelfReviewCompetency[];
+}
+
+export interface SelfReviewAnswer {
+  question_id: string;
+  rating?: number | null;
+  comment?: string | null;
+}
+
+export interface SelfReview {
+  id: string;
+  status: string;
+  overdue?: boolean;
+  submitted_at?: string | null;
+  submitted_by?: PersonRef | null;
+  period_name?: string | null;
+  period_status?: string | null;
+  submission_deadline?: string | null;
+  questionnaire: SelfReviewQuestionnaire;
+  answers: SelfReviewAnswer[];
+}
+
+// GET /me/dashboard: the self-review tasks this person has, if any.
+export interface DashboardReview {
+  id: string;
+  period_id?: string;
+  period_name: string;
+  status: string;
+  submitted_at?: string | null;
+  submission_deadline: string;
+  overdue?: boolean;
+}
+
+// A 422 from submit: the questions still to answer, with the API's wording.
+export class Unanswered extends Error {
+  questionIds: string[];
+  messages: Record<string, string>;
+  constructor(questionIds: string[], messages: Record<string, string>, message: string) {
+    super(message || "Some required questions still need an answer.");
+    this.questionIds = questionIds;
+    this.messages = messages;
+  }
+}
+
+// The question's rating labels, whichever key the snapshot used.
+export const scalePoints = (
+  scale: { points?: ScalePoint[]; labels?: ScalePoint[] } | null | undefined,
+): ScalePoint[] => scale?.points ?? scale?.labels ?? [];
+
+export const needsRating = (q: SelfReviewQuestion) =>
+  q.requires?.rating ?? (q.type === "rated" || q.type === "both");
+export const needsComment = (q: SelfReviewQuestion) =>
+  q.requires?.comment ?? (q.type === "text" || q.type === "both");
+
+// A mandatory question is answered once everything it asks for is there.
+export const isAnswered = (q: SelfReviewQuestion, a: SelfReviewAnswer | undefined) => {
+  if (needsRating(q) && !(a?.rating ?? null)) return false;
+  if (needsComment(q) && !(a?.comment ?? "").trim()) return false;
+  return true;
+};
+
+export const allQuestions = (q: SelfReviewQuestionnaire | undefined): SelfReviewQuestion[] =>
+  (q?.competencies ?? []).flatMap((c) => c.questions ?? []);
+
+export const SELF_REVIEW_KEY = ["self-review"];
+
+// The signed-in person's open self-review task comes from their dashboard;
+// nothing about it is held in the screen.
+export const useMyReviewTasks = (enabled = true) =>
+  useQuery({
+    queryKey: [...DASHBOARD_KEY, "reviews"],
+    retry: false,
+    enabled,
+    select: (data: { reviews?: DashboardReview[] }) => data.reviews ?? [],
+    queryFn: () => apiFetch<{ reviews?: DashboardReview[] }>("/me/dashboard"),
+  });
+
+export const useSelfReview = (id: string | null) =>
+  useQuery({
+    queryKey: [...SELF_REVIEW_KEY, id],
+    retry: false,
+    enabled: Boolean(id),
+    queryFn: () => apiFetch<SelfReview>(`/self-reviews/${encodeURIComponent(id!)}`),
+  });
+
+function useRefetchSelfReview() {
+  const client = useQueryClient();
+  return () =>
+    Promise.all([
+      client.invalidateQueries({ queryKey: SELF_REVIEW_KEY }),
+      client.invalidateQueries({ queryKey: DASHBOARD_KEY }),
+    ]);
+}
+
+export function useSaveAnswers() {
+  const refetch = useRefetchSelfReview();
+  return useMutation({
+    mutationFn: ({ id, answers }: { id: string; answers: SelfReviewAnswer[] }) =>
+      send<unknown>(`/self-reviews/${encodeURIComponent(id)}/answers`, "PUT", { answers }),
+    onSuccess: refetch,
+  });
+}
+
+// A 422 names the questions still unanswered; the API's wording is shown
+// against each one (AC-069).
+export function useSubmitSelfReview() {
+  const refetch = useRefetchSelfReview();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(
+        `${API_BASE_URL}/self-reviews/${encodeURIComponent(id)}/submit`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            [MUTATION_HEADER]: MUTATION_HEADER_VALUE,
+          },
+          body: "{}",
+        },
+      );
+      if (response.ok) return (await response.json()) as SelfReview;
+      let payload: {
+        unanswered?: Array<string | { question_id: string; message?: string }>;
+        errors?: Record<string, string>;
+        message?: string;
+        detail?: unknown;
+      } = {};
+      try {
+        payload = await response.json();
+      } catch {
+        /* no JSON body */
+      }
+      const text = payload.message ?? (typeof payload.detail === "string" ? payload.detail : "");
+      if (response.status === 422) {
+        const messages: Record<string, string> = { ...(payload.errors ?? {}) };
+        const ids = (payload.unanswered ?? []).map((entry) => {
+          if (typeof entry === "string") return entry;
+          if (entry.message) messages[entry.question_id] = entry.message;
+          return entry.question_id;
+        });
+        const all = Array.from(new Set([...ids, ...Object.keys(messages)]));
+        if (all.length) throw new Unanswered(all, messages, text);
+      }
+      throw new ApiError(response.status, text);
+    },
+    onSuccess: refetch,
+  });
 }
 
 export const useReviewPeriods = (enabled = true) =>

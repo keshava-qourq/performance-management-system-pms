@@ -41,7 +41,7 @@ PAST_DEADLINE = (TODAY - timedelta(days=1)).isoformat()
 
 
 @pytest.fixture(autouse=True)
-def _clean():
+def _clean_periods():
     _drop_queued_jobs()
     yield
     _drop_queued_jobs()
@@ -233,9 +233,9 @@ def test_ac063_opening_creates_exactly_one_self_review_task_per_participant(clie
             text("SELECT employee_id FROM self_review WHERE period_id = :p"), {"p": period["id"]}
         ).all()
     ids = [str(r.employee_id) for r in rows]
-    assert sorted(ids) == sorted(
-        period["participant_ids"]
-    ), "AC-063: the tasks created do not match the participants one for one"
+    assert sorted(ids) == sorted(period["participant_ids"]), (
+        "AC-063: the tasks created do not match the participants one for one"
+    )
     assert len(ids) == len(set(ids)), "AC-063: a participant got more than one task"
 
 
@@ -316,9 +316,9 @@ def test_ac064_draft_edits_persist_and_no_task_exists_before_open(client):
     listed = next(p for p in client.get("/review-periods").json() if p["id"] == period["id"])
     assert listed["name"] == "Mid-year 2026 (revised)"
 
-    assert (
-        _count("SELECT count(*) FROM self_review WHERE period_id = :p", p=period["id"]) == 0
-    ), "AC-064: a self-review row existed before the period was opened"
+    assert _count("SELECT count(*) FROM self_review WHERE period_id = :p", p=period["id"]) == 0, (
+        "AC-064: a self-review row existed before the period was opened"
+    )
     assert _queued_jobs() == [], "AC-064: editing a draft queued task creation"
 
 
@@ -739,9 +739,9 @@ def test_nfr010_a_submitted_review_keeps_the_questions_and_scale_it_was_sat_on(c
             text("SELECT snapshot FROM self_review WHERE period_id = :p AND employee_id = :e"),
             {"p": period["id"], "e": submitted},
         ).scalar()
-    assert (
-        after == before
-    ), "NFR-010: a later questionnaire edit changed what a submitted review shows"
+    assert after == before, (
+        "NFR-010: a later questionnaire edit changed what a submitted review shows"
+    )
 
 
 def test_nfr010_a_leaver_with_a_review_is_deactivated_not_deleted(client):

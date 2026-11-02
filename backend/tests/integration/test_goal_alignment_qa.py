@@ -28,7 +28,7 @@ FUTURE = (date.today() + timedelta(days=30)).isoformat()
 
 
 @pytest.fixture(autouse=True)
-def _clean():
+def _clean_alignment():
     yield
     with SessionLocal() as db:
         db.execute(text("DELETE FROM audit_event WHERE entity_type = 'goal'"))
