@@ -5,7 +5,7 @@
 <!-- sdlc:auto:start overview -->
 Build a Performance management System
 
-**Documentation version:** v14
+**Documentation version:** v15
 <!-- sdlc:auto:end overview -->
 
 ## Contents
@@ -16,7 +16,7 @@ Build a Performance management System
 | [Requirements](requirements/README.md) | v1 approved |
 | [Architecture](architecture/README.md) | 47 entries |
 | [Development](development/README.md) | 23 entries |
-| [Testing](testing/README.md) | 1 entry |
+| [Testing](testing/README.md) | 3 entries |
 | [Deployment](deployment/README.md) | 3 entries |
 | [Maintenance](maintenance/README.md) | 1 entry |
 | [Data model](architecture/data-model.md) | generated |
@@ -31,7 +31,7 @@ Build a Performance management System
 | [Runbook](deployment/runbook.md) | deployed |
 | [Release notes](deployment/release-notes.md) | 7 releases |
 | [Traceability matrix](traceability-matrix.md) | 35 requirements |
-| [Changelog](CHANGELOG.md) | 14 versions |
+| [Changelog](CHANGELOG.md) | 15 versions |
 <!-- sdlc:auto:end contents -->
 
 ## Open gaps
@@ -218,13 +218,19 @@ Build a Performance management System
 
 ### Testing
 
-- The four checks are not identified, so their type and scope (unit, lint, build, integration, etc.) are unknown.
-- The run has no associated ticket (ticket=None), so it cannot be traced to any user story among US-001 to US-035.
-- No date, environment, or build/commit identifier is recorded for this run.
-- No test cases, test plan, or acceptance criteria are provided, so requirement-level coverage for US-001 to US-035 cannot be confirmed.
-- No manual, integration, end-to-end, performance, security, or user acceptance testing is recorded for the Performance Management System.
-- No defects, failures, or skipped tests are reported, and none can be confirmed beyond the 4/4 pass count.
-- No test sign-off or approval is recorded, so this entry remains in draft status.
+- The four checks are not named or described, so it is unknown what was verified.
+- The run is not linked to any ticket or requirement, so it cannot be traced to US-001 through US-035.
+- The date and time of the check run were not provided.
+- No logs, coverage metrics, or artifact references were provided.
+- The E2E run has not finished, so there is no pass/fail outcome to record.
+- A count of 0/0 may mean no tests were discovered or none have started. Confirm that the E2E suite actually contains tests.
+- E2E scenarios are not mapped to any requirement (US-001 through US-035).
+- The run start date and time were not provided.
+- No test plan or test cases were provided.
+- There is no mapping of tests to US-001 through US-035, so requirement coverage is unknown.
+- No defect or bug records were provided.
+- No QA or stakeholder test sign-off has been recorded.
+- Non-functional testing (performance, security, accessibility) has not been reported.
 
 ### Deployment
 
