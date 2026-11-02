@@ -3,58 +3,57 @@
 > Maintained by QuorQ AI SDLC. Text between `sdlc:auto` markers is regenerated; anything outside them is yours and is kept.
 
 <!-- sdlc:auto:start narrative -->
-### DEP-33e15d734bf2 · draft · source: deployment:33e15d734bf2
+### DEPLOY-9c9667efe1d4 · draft · source: deployment:9c9667efe1d4
 
-Version 33e15d734bf2 of the Performance management System (PMS) is recorded as live. The release has a separately hosted frontend and backend. No release metadata beyond status, version, and URLs was provided.
+The Performance Management System (PMS) is recorded as live at version 9c9667efe1d4. The deployment has a separate frontend and backend endpoint. No other release metadata was provided.
 
 - Project: Performance management System (PMS)
-- Deployment status: live
-- Version identifier: 33e15d734bf2
+- Deployment status (as reported): live
+- Version identifier: 9c9667efe1d4 (12-character hex string; likely a short commit hash or build ID, but this is not stated in the input)
 - Frontend URL: https://p174f74c26009.d13el1ykvx8z63.amplifyapp.com
 - Backend URL: https://54-166-99-17.sslip.io/apps/174f74c26009/
-- Deployment date: not provided
-- Deployed by / approved by: not provided
-- Requirements included in this release: not specified in the deployment input
+- Entry status is 'draft' because the input records the deployment as live but includes no approval or sign-off.
 
-**Related:** DEP-33e15d734bf2-FE, DEP-33e15d734bf2-BE
+**Related:** DEPLOY-9c9667efe1d4-FE, DEPLOY-9c9667efe1d4-BE
 
-- ⚠ No deployment date or timestamp recorded.
-- ⚠ No deployer or release approver recorded. Document status is left as 'draft' because no approval is on record.
-- ⚠ Target environment is not labelled (e.g. production, staging, or demo). 'Live' alone does not establish that this is production.
-- ⚠ No mapping from this release to requirement keys (US-001 to US-035). It is unknown which user stories are included in version 33e15d734bf2.
-- ⚠ No post-deployment verification, smoke-test, or health-check results provided.
+- ⚠ No deployment date or time recorded.
+- ⚠ No deployer or approver recorded; no release approval or sign-off provided.
+- ⚠ Target environment not labeled (production, staging, or demo); 'live' alone does not confirm it is production.
+- ⚠ Version identifier type not stated (commit hash, build ID, or tag); no link to a source branch or tag.
+- ⚠ No release notes or change list; no mapping of which requirements (US-001 to US-035) are included in this release.
+- ⚠ No pre-deployment test results or QA sign-off referenced.
 - ⚠ No rollback plan or previous version recorded.
-- ⚠ No release notes or changelog provided for this version.
-- ⚠ The format of the version identifier is not described. It may be a commit hash or build id, but this is not confirmed.
+- ⚠ No post-deployment smoke test, health check, or monitoring/alerting details recorded.
+- ⚠ No configuration, secrets-management, or infrastructure details recorded.
 
-### DEP-33e15d734bf2-FE · draft · source: deployment:33e15d734bf2
+### DEPLOY-9c9667efe1d4-FE · draft · source: deployment:9c9667efe1d4
 
-The frontend for version 33e15d734bf2 is served at an amplifyapp.com URL. The domain suggests AWS Amplify hosting, but the input does not state the hosting platform explicitly.
+The frontend for version 9c9667efe1d4 is served from an AWS Amplify-hosted URL. This is the URL end users would open to use the application.
 
 - Frontend URL: https://p174f74c26009.d13el1ykvx8z63.amplifyapp.com
+- Hosting: the amplifyapp.com domain indicates AWS Amplify Hosting. The input does not state the hosting provider explicitly.
 - Protocol: HTTPS
-- Hosting: inferred only from the amplifyapp.com domain (AWS Amplify). Not explicitly stated in the input.
-- The id fragment '174f74c26009' in the subdomain also appears in the backend path. This suggests both belong to the same app instance, but the input does not confirm it.
 
-**Related:** DEP-33e15d734bf2
+**Related:** DEPLOY-9c9667efe1d4
 
-- ⚠ No custom or production domain recorded. Only the platform-generated URL is given.
+- ⚠ No custom domain recorded; unclear whether the default Amplify domain is the intended end-user URL.
+- ⚠ No frontend build details recorded (framework, build command, environment variables).
 - ⚠ No confirmation that the frontend is configured to call the recorded backend URL.
-- ⚠ Hosting platform, region, and build configuration are not stated in the input.
 
-### DEP-33e15d734bf2-BE · draft · source: deployment:33e15d734bf2
+### DEPLOY-9c9667efe1d4-BE · draft · source: deployment:9c9667efe1d4
 
-The backend for version 33e15d734bf2 is served from an sslip.io hostname under the path /apps/174f74c26009/. This hostname is a wildcard-DNS name that resolves to IP 54.166.99.17.
+The backend for version 9c9667efe1d4 is reachable over HTTPS at an sslip.io hostname under the path /apps/174f74c26009/. The hostname resolves to the IP address 54.166.99.17.
 
 - Backend URL: https://54-166-99-17.sslip.io/apps/174f74c26009/
-- Protocol: HTTPS
-- The hostname uses sslip.io wildcard DNS and maps directly to IP address 54.166.99.17.
-- The app is served under a path prefix (/apps/174f74c26009/). This suggests a shared host serving multiple apps, but the input does not confirm it.
+- Hostname pattern: sslip.io is a wildcard DNS service. '54-166-99-17.sslip.io' resolves to IP 54.166.99.17. That IP is likely an AWS EC2 address, but the input does not state this.
+- Path prefix /apps/174f74c26009/ suggests the backend is one app among several on a shared host. This is inferred, not stated.
+- Identifier '174f74c26009' appears in both the backend path and the frontend subdomain (p174f74c26009), suggesting a common app/project ID. This is not confirmed by the input.
 
-**Related:** DEP-33e15d734bf2
+**Related:** DEPLOY-9c9667efe1d4
 
-- ⚠ The backend is addressed through a raw-IP wildcard DNS name (sslip.io), not a stable domain. It is unclear whether this is the intended long-term endpoint. Confirm DNS and TLS certificate ownership before treating it as production.
-- ⚠ No infrastructure details recorded: host type, region, scaling, or database.
-- ⚠ No API health-check or verification result recorded for this endpoint.
-- ⚠ No record of secrets or configuration management, monitoring, logging, or backup arrangements for the backend.
+- ⚠ The backend is addressed through a wildcard-DNS hostname tied to a raw IP. Confirm whether this is intended for a live or production deployment and whether the IP is static.
+- ⚠ No backend runtime, server, or container details recorded.
+- ⚠ No database or data-store deployment details recorded (location, migrations applied, backups).
+- ⚠ No API health-check endpoint or uptime monitoring recorded.
+- ⚠ No authentication, CORS, or TLS certificate details recorded for the backend.
 <!-- sdlc:auto:end narrative -->

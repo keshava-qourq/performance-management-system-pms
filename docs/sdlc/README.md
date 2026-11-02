@@ -5,7 +5,7 @@
 <!-- sdlc:auto:start overview -->
 Build a Performance management System
 
-**Documentation version:** v13
+**Documentation version:** v14
 <!-- sdlc:auto:end overview -->
 
 ## Contents
@@ -31,7 +31,7 @@ Build a Performance management System
 | [Runbook](deployment/runbook.md) | deployed |
 | [Release notes](deployment/release-notes.md) | 7 releases |
 | [Traceability matrix](traceability-matrix.md) | 35 requirements |
-| [Changelog](CHANGELOG.md) | 13 versions |
+| [Changelog](CHANGELOG.md) | 14 versions |
 <!-- sdlc:auto:end contents -->
 
 ## Open gaps
@@ -228,21 +228,23 @@ Build a Performance management System
 
 ### Deployment
 
-- No deployment date or timestamp recorded.
-- No deployer or release approver recorded. Document status is left as 'draft' because no approval is on record.
-- Target environment is not labelled (e.g. production, staging, or demo). 'Live' alone does not establish that this is production.
-- No mapping from this release to requirement keys (US-001 to US-035). It is unknown which user stories are included in version 33e15d734bf2.
-- No post-deployment verification, smoke-test, or health-check results provided.
+- No deployment date or time recorded.
+- No deployer or approver recorded; no release approval or sign-off provided.
+- Target environment not labeled (production, staging, or demo); 'live' alone does not confirm it is production.
+- Version identifier type not stated (commit hash, build ID, or tag); no link to a source branch or tag.
+- No release notes or change list; no mapping of which requirements (US-001 to US-035) are included in this release.
+- No pre-deployment test results or QA sign-off referenced.
 - No rollback plan or previous version recorded.
-- No release notes or changelog provided for this version.
-- The format of the version identifier is not described. It may be a commit hash or build id, but this is not confirmed.
-- No custom or production domain recorded. Only the platform-generated URL is given.
+- No post-deployment smoke test, health check, or monitoring/alerting details recorded.
+- No configuration, secrets-management, or infrastructure details recorded.
+- No custom domain recorded; unclear whether the default Amplify domain is the intended end-user URL.
+- No frontend build details recorded (framework, build command, environment variables).
 - No confirmation that the frontend is configured to call the recorded backend URL.
-- Hosting platform, region, and build configuration are not stated in the input.
-- The backend is addressed through a raw-IP wildcard DNS name (sslip.io), not a stable domain. It is unclear whether this is the intended long-term endpoint. Confirm DNS and TLS certificate ownership before treating it as production.
-- No infrastructure details recorded: host type, region, scaling, or database.
-- No API health-check or verification result recorded for this endpoint.
-- No record of secrets or configuration management, monitoring, logging, or backup arrangements for the backend.
+- The backend is addressed through a wildcard-DNS hostname tied to a raw IP. Confirm whether this is intended for a live or production deployment and whether the IP is static.
+- No backend runtime, server, or container details recorded.
+- No database or data-store deployment details recorded (location, migrations applied, backups).
+- No API health-check endpoint or uptime monitoring recorded.
+- No authentication, CORS, or TLS certificate details recorded for the backend.
 
 ### Maintenance
 
