@@ -20,7 +20,6 @@ export interface ActionItem {
   completed_at: string | null;
   completed_by: PersonRef | null;
   // Carried-over items say which earlier 1:1 they came from.
-  one_on_one_id?: string;
   meeting_date?: string | null;
 }
 
@@ -36,9 +35,6 @@ export interface OneOnOneSummary {
   id: string;
   counterpart: PersonRef;
   meeting_date: string;
-  reference?: string | null;
-  i_am_manager?: boolean;
-  talking_point_count?: number;
   open_action_item_count?: number;
   overdue_action_item_count?: number;
 }
@@ -49,9 +45,7 @@ export interface OneOnOneDetail {
   id: string;
   counterpart: PersonRef;
   meeting_date: string;
-  reference?: string | null;
   i_am_manager: boolean;
-  updated_at?: string | null;
   talking_points: TalkingPoint[];
   action_items: ActionItem[];
   carry_over: ActionItem[];
@@ -65,8 +59,7 @@ export interface ActionItemInput {
   due_date: string;
 }
 
-// GET /one-on-ones answers with the meetings and the caller's open items. Some
-// deployments answer with the bare array, so both shapes are accepted.
+// GET /one-on-ones answers with the meetings and the caller's open items.
 export interface OneOnOneList {
   one_on_ones: OneOnOneSummary[];
   open_action_items: ActionItem[];
@@ -92,17 +85,18 @@ async function send<T>(path: string, method: string, body?: unknown): Promise<T>
   throw new ApiError(response.status, text);
 }
 
-export const ONE_ON_ONES_KEY = ["one-on-ones"];
+const ONE_ON_ONES_KEY = ["one-on-ones"];
 
 export const useOneOnOnes = () =>
   useQuery({
     queryKey: ONE_ON_ONES_KEY,
     retry: false,
     queryFn: async () => {
-      const data = await apiFetch<OneOnOneList | OneOnOneSummary[]>("/one-on-ones");
-      return Array.isArray(data)
-        ? { one_on_ones: data, open_action_items: [] }
-        : { one_on_ones: data.one_on_ones ?? [], open_action_items: data.open_action_items ?? [] };
+      const data = await apiFetch<OneOnOneList>("/one-on-ones");
+      return {
+        one_on_ones: data.one_on_ones ?? [],
+        open_action_items: data.open_action_items ?? [],
+      };
     },
   });
 

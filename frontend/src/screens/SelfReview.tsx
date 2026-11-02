@@ -56,18 +56,14 @@ const draftOf = (review: SelfReviewData | undefined): Draft => {
   return draft;
 };
 
-const toAnswers = (draft: Draft): SelfReviewAnswer[] =>
-  Object.entries(draft).map(([question_id, value]) => ({
-    question_id,
-    rating: value.rating === "" ? null : Number(value.rating),
-    comment: value.comment ?? "",
-  }));
-
 const answerOf = (draft: Draft, id: string): SelfReviewAnswer => ({
   question_id: id,
-  rating: draft[id]?.rating === "" || draft[id] === undefined ? null : Number(draft[id].rating),
+  rating: draft[id]?.rating ? Number(draft[id].rating) : null,
   comment: draft[id]?.comment ?? "",
 });
+
+const toAnswers = (draft: Draft): SelfReviewAnswer[] =>
+  Object.keys(draft).map((id) => answerOf(draft, id));
 
 function Notice({ tone, children }: { tone: string; children: React.ReactNode }) {
   const col = tone === "bad" ? C.bad : tone === "ok" ? C.accent : C.warn;
@@ -317,7 +313,10 @@ export default function SelfReviewSection() {
         for (const id of error.questionIds)
           errors[id] = error.messages[id] ?? "This question needs an answer before you can submit.";
         setQuestionErrors(errors);
-        setNotice({ tone: "bad", text: error.message || describeMissing(error.questionIds.length) });
+        setNotice({
+          tone: "bad",
+          text: error.message || describeMissing(error.questionIds.length),
+        });
         return;
       }
       setNotice({

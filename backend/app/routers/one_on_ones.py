@@ -97,17 +97,12 @@ def _is_participant(meeting: OneOnOne, employee: Employee) -> bool:
     return employee.id in {meeting.manager_id, meeting.report_id}
 
 
-def _load(db: Session, one_on_one_id: uuid.UUID, caller: Employee) -> OneOnOne:
+def _load(db: Session, one_on_one_id: uuid.UUID, caller: Employee) -> OneOnOne | None:
+    """The 1:1, or None when there is none; a non-participant is refused."""
     meeting = db.get(OneOnOne, one_on_one_id)
-    if meeting is None:
-        raise _NotFound
-    if not _is_participant(meeting, caller):
+    if meeting is not None and not _is_participant(meeting, caller):
         raise auth.PolicyRefusal
     return meeting
-
-
-class _NotFound(Exception):
-    """Internal: turned into a 404 by the routes below."""
 
 
 def _mine(caller: Employee):
@@ -256,9 +251,8 @@ def update_one_on_one(
     db: Session = Depends(get_db),
     caller: Employee = mutator,
 ):
-    try:
-        meeting = _load(db, one_on_one_id, caller)
-    except _NotFound:
+    meeting = _load(db, one_on_one_id, caller)
+    if meeting is None:
         return Response(status_code=404)
     sent = body.model_fields_set
     if "meeting_date" in sent:
@@ -313,9 +307,8 @@ def add_action_item(
     db: Session = Depends(get_db),
     caller: Employee = mutator,
 ):
-    try:
-        meeting = _load(db, one_on_one_id, caller)
-    except _NotFound:
+    meeting = _load(db, one_on_one_id, caller)
+    if meeting is None:
         return Response(status_code=404)
     errors: dict[str, str] = {}
     if not (body.description or "").strip():

@@ -21,9 +21,7 @@ import {
 } from "@/lib/reviews";
 import SelfReviewSection from "./SelfReview";
 
-const { Label, Select, Separator } = UI;
-
-const { Bell, Edit } = Icons;
+const { Separator } = UI;
 
 const C = {
   bg: "#16211c",
@@ -36,7 +34,6 @@ const C = {
   warn: "#d9b27c",
   bad: "#e69a8e",
 };
-const TODAY = "2026-10-29";
 const NOW_LABEL = "29 Oct 2026, 14:20";
 const HEAD = {
   fontFamily: '"Baskerville", "Libre Baskerville", "Times New Roman", Georgia, serif',
@@ -54,7 +51,6 @@ const PEOPLE = {
   r4: { name: "Marcus Bell", title: "Support Lead", dept: "Customer Success" },
   e6: { name: "Elena Vasquez", title: "Finance Controller", dept: "Finance" },
 };
-const MY_ID = "e1";
 const REPORTS = ["r1", "r2", "r3", "r4"];
 const OUTSIDE = ["e6"];
 
@@ -191,28 +187,6 @@ const REVIEWS0 = {
   },
   "p1:r4": { status: "not_started", answers: {}, submittedAt: null, snapshot: null, history: [] },
 };
-const PERIODS0 = [
-  {
-    id: "p1",
-    name: "H2 2026 Self-Review",
-    templateId: "t1",
-    start: "2026-07-01",
-    end: "2026-12-31",
-    deadline: "2026-11-13",
-    status: "open",
-    participants: ["e1", "r1", "r2", "r3", "r4"],
-  },
-];
-
-const isAnswered = (q, a) => {
-  const x = a || {};
-  const hasR = x.rating !== null && x.rating !== undefined;
-  const hasC = !!(x.comment && x.comment.trim());
-  if (q.type === "rated") return hasR;
-  if (q.type === "text") return hasC;
-  return hasR && hasC;
-};
-const allQs = (snap) => snap.competencies.reduce((acc, c) => acc.concat(c.questions), []);
 const fmt = (d) => {
   if (!d) return "";
   const p = d.split("-");
@@ -541,12 +515,6 @@ export default function Screen() {
   const setRev = (key, patch) =>
     setReviews((r) => Object.assign({}, r, { [key]: Object.assign({}, r[key], patch) }));
 
-  const liveSnap = (tid) => {
-    const t = tplById(tid);
-    return mkSnap(t, scaleById(t.scaleId));
-  };
-
-
   /* HR: rating scale */
   const setPoints = (n) => {
     setScPoints(n);
@@ -796,7 +764,6 @@ export default function Screen() {
       text: "Review reopened. The reason, your identity and the time are recorded in its history.",
     });
   };
-
 
   const roleTabs = [
     { k: "employee", l: "Employee" },

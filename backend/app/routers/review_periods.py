@@ -53,14 +53,18 @@ def _participants(db: Session, period_id: uuid.UUID) -> list[ReviewPeriodPartici
     )
 
 
-def _out(db: Session, period: ReviewPeriod) -> dict:
-    rows = _participants(db, period.id)
-    people = {
+def _people(db: Session, rows: list[ReviewPeriodParticipant]) -> dict[uuid.UUID, Employee]:
+    return {
         e.id: e
         for e in db.scalars(
             select(Employee).where(Employee.id.in_([r.employee_id for r in rows] or [None]))
         ).all()
     }
+
+
+def _out(db: Session, period: ReviewPeriod) -> dict:
+    rows = _participants(db, period.id)
+    people = _people(db, rows)
     return {
         "id": str(period.id),
         "name": period.name,
@@ -307,12 +311,7 @@ def period_status(period_id: uuid.UUID, db: Session = Depends(get_db), _hr=hr_ad
     if period is None:
         return Response(status_code=404)
     rows = _participants(db, period.id)
-    people = {
-        e.id: e
-        for e in db.scalars(
-            select(Employee).where(Employee.id.in_([r.employee_id for r in rows] or [None]))
-        ).all()
-    }
+    people = _people(db, rows)
     reviews = {
         r.employee_id: r
         for r in db.scalars(select(SelfReview).where(SelfReview.period_id == period.id)).all()

@@ -19,9 +19,7 @@ export interface ReviewPeriod {
   end_date: string;
   submission_deadline: string;
   status: string;
-  opened_at?: string | null;
-  participant_ids?: string[];
-  participants?: PersonRef[];
+  participant_ids: string[];
 }
 
 export interface ReviewPeriodInput {
@@ -47,11 +45,10 @@ export interface QuestionnaireRef {
   status?: string;
 }
 
-export const PERIODS_KEY = ["review-periods"];
+const PERIODS_KEY = ["review-periods"];
 
-// The ids of a period's participants, whichever shape the API used.
 export const participantIds = (period: ReviewPeriod | null | undefined): string[] =>
-  period?.participant_ids ?? (period?.participants ?? []).map((p) => p.id);
+  period?.participant_ids ?? [];
 
 export const hasSubmitted = (row: ParticipantStatus) =>
   (row.status ?? "").toLowerCase() === "submitted";
@@ -92,10 +89,9 @@ export interface ScalePoint {
 export interface SelfReviewQuestion {
   id: string;
   text: string;
-  type: string;
   mandatory: boolean;
   requires?: { rating?: boolean; comment?: boolean };
-  scale?: { points?: ScalePoint[]; labels?: ScalePoint[] } | null;
+  scale?: { points?: ScalePoint[] } | null;
 }
 
 export interface SelfReviewCompetency {
@@ -108,7 +104,6 @@ export interface SelfReviewCompetency {
 // answers saved so far.
 export interface SelfReviewQuestionnaire {
   name: string;
-  scale?: { points?: ScalePoint[]; labels?: ScalePoint[] } | null;
   competencies: SelfReviewCompetency[];
 }
 
@@ -124,7 +119,6 @@ export interface SelfReview {
   overdue?: boolean;
   submitted_at?: string | null;
   submitted_by?: PersonRef | null;
-  period_name?: string | null;
   period_status?: string | null;
   submission_deadline?: string | null;
   questionnaire: SelfReviewQuestionnaire;
@@ -134,10 +128,8 @@ export interface SelfReview {
 // GET /me/dashboard: the self-review tasks this person has, if any.
 export interface DashboardReview {
   id: string;
-  period_id?: string;
   period_name: string;
   status: string;
-  submitted_at?: string | null;
   submission_deadline: string;
   overdue?: boolean;
 }
@@ -153,15 +145,11 @@ export class Unanswered extends Error {
   }
 }
 
-// The question's rating labels, whichever key the snapshot used.
-export const scalePoints = (
-  scale: { points?: ScalePoint[]; labels?: ScalePoint[] } | null | undefined,
-): ScalePoint[] => scale?.points ?? scale?.labels ?? [];
+export const scalePoints = (scale: { points?: ScalePoint[] } | null | undefined): ScalePoint[] =>
+  scale?.points ?? [];
 
-export const needsRating = (q: SelfReviewQuestion) =>
-  q.requires?.rating ?? (q.type === "rated" || q.type === "both");
-export const needsComment = (q: SelfReviewQuestion) =>
-  q.requires?.comment ?? (q.type === "text" || q.type === "both");
+export const needsRating = (q: SelfReviewQuestion) => Boolean(q.requires?.rating);
+export const needsComment = (q: SelfReviewQuestion) => Boolean(q.requires?.comment);
 
 // A mandatory question is answered once everything it asks for is there.
 export const isAnswered = (q: SelfReviewQuestion, a: SelfReviewAnswer | undefined) => {
@@ -173,15 +161,14 @@ export const isAnswered = (q: SelfReviewQuestion, a: SelfReviewAnswer | undefine
 export const allQuestions = (q: SelfReviewQuestionnaire | undefined): SelfReviewQuestion[] =>
   (q?.competencies ?? []).flatMap((c) => c.questions ?? []);
 
-export const SELF_REVIEW_KEY = ["self-review"];
+const SELF_REVIEW_KEY = ["self-review"];
 
 // The signed-in person's open self-review task comes from their dashboard;
 // nothing about it is held in the screen.
-export const useMyReviewTasks = (enabled = true) =>
+export const useMyReviewTasks = () =>
   useQuery({
     queryKey: [...DASHBOARD_KEY, "reviews"],
     retry: false,
-    enabled,
     select: (data: { reviews?: DashboardReview[] }) => data.reviews ?? [],
     queryFn: () => apiFetch<{ reviews?: DashboardReview[] }>("/me/dashboard"),
   });
@@ -232,7 +219,7 @@ export function useSubmitSelfReview() {
       );
       if (response.ok) return (await response.json()) as SelfReview;
       let payload: {
-        unanswered?: Array<string | { question_id: string; message?: string }>;
+        unanswered?: Array<{ question_id: string; message?: string }>;
         errors?: Record<string, string>;
         message?: string;
         detail?: unknown;
@@ -245,13 +232,15 @@ export function useSubmitSelfReview() {
       const text = payload.message ?? (typeof payload.detail === "string" ? payload.detail : "");
       if (response.status === 422) {
         const messages: Record<string, string> = { ...(payload.errors ?? {}) };
-        const ids = (payload.unanswered ?? []).map((entry) => {
-          if (typeof entry === "string") return entry;
+        for (const entry of payload.unanswered ?? [])
           if (entry.message) messages[entry.question_id] = entry.message;
-          return entry.question_id;
-        });
-        const all = Array.from(new Set([...ids, ...Object.keys(messages)]));
-        if (all.length) throw new Unanswered(all, messages, text);
+        const ids = Array.from(
+          new Set([
+            ...(payload.unanswered ?? []).map((entry) => entry.question_id),
+            ...Object.keys(messages),
+          ]),
+        );
+        if (ids.length) throw new Unanswered(ids, messages, text);
       }
       throw new ApiError(response.status, text);
     },
@@ -259,7 +248,7 @@ export function useSubmitSelfReview() {
   });
 }
 
-export const useReviewPeriods = (enabled = true) =>
+export const useReviewPeriods = (enabled: boolean) =>
   useQuery({
     queryKey: PERIODS_KEY,
     retry: false,
@@ -280,16 +269,16 @@ export const usePeriodStatus = (id: string | null) =>
   });
 
 // Active colleagues for the participant picker; leavers are never offered.
-export const useParticipantPicker = (enabled = true) =>
+export const useParticipantPicker = (enabled: boolean) =>
   useQuery({
-    queryKey: ["review-periods", "participants"],
+    queryKey: [...PERIODS_KEY, "participants"],
     retry: false,
     enabled,
     select: activeOnly,
     queryFn: () => apiFetch<Employee[]>("/employees"),
   });
 
-export const usePublishedQuestionnaires = (enabled = true) =>
+export const usePublishedQuestionnaires = (enabled: boolean) =>
   useQuery({
     queryKey: ["questionnaires"],
     retry: false,
@@ -333,7 +322,7 @@ export function useOpenReviewPeriod() {
 // A 409 means the participant has submitted and must be preserved (NFR-010);
 // the API's wording is what the screen shows.
 export function useRemoveParticipant() {
-  const client = useQueryClient();
+  const refetch = useRefetchPeriods();
   return useMutation({
     mutationFn: ({ periodId, employeeId }: { periodId: string; employeeId: string }) =>
       send<void>(
@@ -342,6 +331,6 @@ export function useRemoveParticipant() {
         )}`,
         "DELETE",
       ),
-    onSuccess: () => client.invalidateQueries({ queryKey: PERIODS_KEY }),
+    onSuccess: refetch,
   });
 }

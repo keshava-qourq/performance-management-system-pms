@@ -61,9 +61,10 @@ def _out(db: Session, review: SelfReview) -> dict:
     period = db.get(ReviewPeriod, review.period_id)
     submitted = review.submitted_at is not None
     snapshot = review.snapshot or {}
+    employee = _brief(db.get(Employee, review.employee_id))
     return {
         "id": str(review.id),
-        "employee": _brief(db.get(Employee, review.employee_id)),
+        "employee": employee,
         "period": {
             "id": str(period.id),
             "name": period.name,
@@ -75,9 +76,7 @@ def _out(db: Session, review: SelfReview) -> dict:
         "status": review.status,
         "submitted": submitted,
         "submitted_at": review.submitted_at.isoformat() if submitted else None,
-        "submitted_by": (
-            _brief(db.get(Employee, review.employee_id))["full_name"] if submitted else None
-        ),
+        "submitted_by": employee["full_name"] if submitted else None,
         "read_only": submitted or period.status == "closed",
         "overdue": not submitted and date.today() > period.submission_deadline,
         "name": snapshot.get("name"),

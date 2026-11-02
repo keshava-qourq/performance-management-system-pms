@@ -155,7 +155,6 @@ def dashboard(db: Session = Depends(get_db), caller: Employee = Depends(auth.cur
     overdue = [i for i in items if i["overdue"]]
     return {
         "action_items": items,
-        "overdue_action_items": overdue,
         "goals": [_goal_out(db, g) for g in goals],
         "feedback": [_out(db, f) for f in _list(db, caller, "received")],
         "unread_feedback": unread,
