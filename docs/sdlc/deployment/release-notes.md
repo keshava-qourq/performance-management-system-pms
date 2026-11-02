@@ -3,6 +3,28 @@
 > Maintained by QuorQ AI SDLC. Text between `sdlc:auto` markers is regenerated; anything outside them is yours and is kept.
 
 <!-- sdlc:auto:start releases -->
+## 9c9667efe1d4 — 2026-11-02
+
+**Commit:** `9c9667e`
+
+**Delivered:**
+- US-017: HR opens a review period for participants
+- US-018: Employee completes a self-review
+- US-027: Track action items from a 1:1
+- US-028: Keep private manager notes
+
+## 500e363a6b35 — 2026-10-30
+
+**Commit:** `500e363`
+
+**Delivered:**
+- US-016: HR builds a competency questionnaire
+- US-022: Give written constructive feedback
+- US-023: View feedback received and given
+- US-025: Create a 1:1 record
+- US-026: Build a shared agenda and talking points
+- US-FIX-1: Fix the scaffold's failing checks
+
 ## 33e15d734bf2 — 2026-10-30
 
 **Commit:** `33e15d7`
