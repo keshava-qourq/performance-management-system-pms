@@ -182,6 +182,47 @@ class QuestionnaireQuestion(Base):
     position: Mapped[int] = mapped_column(Integer, default=0)
 
 
+class ReviewPeriod(Base):
+    __tablename__ = "review_period"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_id)
+    name: Mapped[str] = mapped_column(String(200))
+    questionnaire_version_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("questionnaire_version.id")
+    )
+    start_date: Mapped[date] = mapped_column(Date)
+    end_date: Mapped[date] = mapped_column(Date)
+    submission_deadline: Mapped[date] = mapped_column(Date)
+    status: Mapped[str] = mapped_column(String(20), default="draft")  # draft|open|closed
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ReviewPeriodParticipant(Base):
+    __tablename__ = "review_period_participant"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_id)
+    period_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("review_period.id"), index=True)
+    employee_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("employee.id"))
+
+
+class SelfReview(Base):
+    """One self-review task per participant, created when the period opens."""
+
+    __tablename__ = "self_review"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_id)
+    period_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("review_period.id"), index=True)
+    employee_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("employee.id"), index=True)
+    questionnaire_version_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("questionnaire_version.id")
+    )
+    # The questionnaire as it was when this task was created (NFR-010).
+    snapshot: Mapped[dict] = mapped_column(JSON)
+    answers: Mapped[dict | None] = mapped_column(JSON)
+    status: Mapped[str] = mapped_column(String(20), default="not_started")
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
 class AuditEvent(Base):
     __tablename__ = "audit_event"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
