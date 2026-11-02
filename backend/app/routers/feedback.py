@@ -1,6 +1,7 @@
 """Praise: send it, read what you received or gave, and the personal dashboard (US-021)."""
 
 import uuid
+from datetime import date
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -9,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app import auth
 from app.database import get_db
-from app.models import Employee, Feedback, Goal
+from app.models import Employee, Feedback, Goal, ReviewPeriod, SelfReview
 from app.routers.employees import _brief, _invalid
 from app.routers.goals import _out as _goal_out
 
@@ -125,10 +126,47 @@ def dashboard(db: Session = Depends(get_db), caller: Employee = Depends(auth.cur
             Feedback.read_at.is_(None),
         )
     )
+    reviews = []
+    rows = db.scalars(
+        select(SelfReview)
+        .join(ReviewPeriod, ReviewPeriod.id == SelfReview.period_id)
+        .where(SelfReview.employee_id == caller.id)
+        .order_by(ReviewPeriod.submission_deadline)
+    ).all()
+    for review in rows:
+        period = db.get(ReviewPeriod, review.period_id)
+        reviews.append(
+            {
+                "id": str(review.id),
+                "period_id": str(period.id),
+                "period_name": period.name,
+                "status": review.status,
+                "submitted_at": review.submitted_at.isoformat() if review.submitted_at else None,
+                "submission_deadline": period.submission_deadline.isoformat(),
+                "overdue": (
+                    review.submitted_at is None and date.today() > period.submission_deadline
+                ),
+            }
+        )
+    # Open 1:1 action items, each flagged overdue past its due date (AC-102).
+    from app.routers.one_on_ones import open_action_items  # avoids a circular import
+
+    items = open_action_items(db, caller)
+    overdue = [i for i in items if i["overdue"]]
     return {
+        "action_items": items,
         "goals": [_goal_out(db, g) for g in goals],
         "feedback": [_out(db, f) for f in _list(db, caller, "received")],
         "unread_feedback": unread,
-        "reviews": [],
-        "attention": [],
+        "reviews": reviews,
+        # "Needs your attention": overdue 1:1 action items the caller owns (AC-102).
+        "attention": [
+            {
+                "type": "action_item",
+                "id": i["id"],
+                "description": i["description"],
+                "due_date": i["due_date"],
+            }
+            for i in overdue
+        ],
     }

@@ -14,8 +14,11 @@ from app.routers import auth as auth_router
 from app.routers import employees as employees_router
 from app.routers import feedback as feedback_router
 from app.routers import goals as goals_router
+from app.routers import one_on_ones as one_on_ones_router
 from app.routers import profile as profile_router
 from app.routers import questionnaires as questionnaires_router
+from app.routers import review_periods as review_periods_router
+from app.routers import self_reviews as self_reviews_router
 from app.routers import settings as settings_router
 from app.services import configured_services
 
@@ -34,6 +37,9 @@ app.include_router(profile_router.router)
 app.include_router(feedback_router.router)
 app.include_router(settings_router.router)
 app.include_router(questionnaires_router.router)
+app.include_router(review_periods_router.router)
+app.include_router(self_reviews_router.router)
+app.include_router(one_on_ones_router.router)
 
 
 @app.exception_handler(RequestValidationError)
