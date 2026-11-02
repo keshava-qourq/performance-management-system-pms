@@ -148,7 +148,13 @@ def dashboard(db: Session = Depends(get_db), caller: Employee = Depends(auth.cur
                 ),
             }
         )
+    # Open 1:1 action items, each flagged overdue past its due date (AC-102).
+    from app.routers.one_on_ones import open_action_items  # avoids a circular import
+
+    items = open_action_items(db, caller)
     return {
+        "action_items": items,
+        "overdue_action_items": [i for i in items if i["overdue"]],
         "goals": [_goal_out(db, g) for g in goals],
         "feedback": [_out(db, f) for f in _list(db, caller, "received")],
         "unread_feedback": unread,

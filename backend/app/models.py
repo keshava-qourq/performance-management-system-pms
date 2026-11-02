@@ -223,6 +223,33 @@ class SelfReview(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
+class OneOnOne(Base):
+    """A 1:1 between a manager and one of their direct reports (US-027)."""
+
+    __tablename__ = "one_on_one"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_id)
+    manager_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("employee.id"), index=True)
+    report_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("employee.id"), index=True)
+    meeting_date: Mapped[date] = mapped_column(Date)
+    reference: Mapped[str | None] = mapped_column(String(200))
+    private_note: Mapped[str | None] = mapped_column(Text)  # manager only (US-027-2)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("employee.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class ActionItem(Base):
+    __tablename__ = "action_item"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=_id)
+    one_on_one_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("one_on_one.id"), index=True)
+    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("employee.id"), index=True)
+    description: Mapped[str] = mapped_column(Text)
+    due_date: Mapped[date] = mapped_column(Date)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("employee.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
 class AuditEvent(Base):
     __tablename__ = "audit_event"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
