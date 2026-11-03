@@ -71,11 +71,11 @@ def create_session(db: Session, employee: Employee) -> str:
 
 
 def set_session_cookie(response: Response, token: str) -> None:
-    response.set_cookie(COOKIE_NAME, token, httponly=True, secure=True, samesite="strict")
+    response.set_cookie(COOKIE_NAME, token, httponly=True, secure=True, samesite="none")
 
 
 def clear_session_cookie(response: Response) -> None:
-    response.delete_cookie(COOKIE_NAME, httponly=True, secure=True, samesite="strict")
+    response.delete_cookie(COOKIE_NAME, httponly=True, secure=True, samesite="none")
 
 
 def revoke_session(db: Session, token: str) -> None:
